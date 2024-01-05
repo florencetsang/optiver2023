@@ -1,5 +1,6 @@
 import os
-from feature_engineering import enrich_df_with_features
+from data_preprocessor import DataPreprocessor, CompositeDataPreprocessor
+from feature_engineering import EnrichDFDataPreprocessor
 import lightgbm as lgb 
 import xgboost as xgb 
 import catboost as cbt 
@@ -7,20 +8,6 @@ import numpy as np
 import joblib
 
 nonfeatures = ['stock_id', 'date_id','time_id', 'row_id','target']
-
-class DataPreprocessor:
-    def apply(self, df):
-        return df
-    
-class CompositeDataPreprocessor(DataPreprocessor):
-    def __init__(self, processors):
-        self.processors = processors
-
-    def apply(self, df):
-        processed_df = df
-        for processor in self.processors:
-            processed_df = processor.apply(processed_df)
-        return processed_df
 
 class RemoveIrrelevantFeaturesDataPreprocessor(DataPreprocessor):
     def __init__(self, non_features):
@@ -170,6 +157,7 @@ class ManualKFoldModelPipeline(ModelPipeline):
 # to be run from a main.py or notebook
 def test_refactor_main():
     processors = [
+        EnrichDFDataPreprocessor(),
         RemoveIrrelevantFeaturesDataPreprocessor(),
         DropTargetNADataPreprocessor()
     ]
