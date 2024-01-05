@@ -1,2 +1,8 @@
+__pycache__/
+**/__pycache__/
+
 optiver-trading-at-the-close/
 .conda/
+
+florence/models
+florence/florence_temp
