@@ -3,6 +3,13 @@ from itertools import combinations
 from data_preprocessor import DataPreprocessor
 
 class EnrichDFDataPreprocessor(DataPreprocessor):
+    def calculate_pressure(self, df):
+        return np.where(
+            df['imbalance_buy_sell_flag']==1,
+            df['imbalance_size']/df['ask_size'],
+            df['imbalance_size']/df['bid_size']
+        )
+    
     def apply(self, df):
         prices = ['reference_price','far_price', 'near_price', 'ask_price', 'bid_price', 'wap']
         sizes = ["matched_size", "bid_size", "ask_size", "imbalance_size"]
@@ -22,14 +29,26 @@ class EnrichDFDataPreprocessor(DataPreprocessor):
 
             df_[f'{a}_{b}_{c}_imb2'] = np.where(mid.eq(mini), np.nan, (maxi - mid) / (mid - mini))
 
-        def calculate_pressure(df):
-            return np.where(
-                df['imbalance_buy_sell_flag']==1,
-                df['imbalance_size']/df['ask_size'],
-                df['imbalance_size']/df['bid_size']
-            )
-        
-        df_['pressure'] = calculate_pressure(df)
+        df_['pressure'] = self.calculate_pressure(df)
         df_['inefficiency'] = df.eval('imbalance_size/matched_size')
 
         return df_
+
+class RemoveIrrelevantFeaturesDataPreprocessor(DataPreprocessor):
+    def __init__(self, non_features):
+        super().__init__()
+        self.non_features = non_features
+    
+    def apply(self, df):
+        useful_features = [c for c in df.columns if c not in self.non_features]
+        processed_df = df[useful_features]
+        return processed_df
+
+class DropTargetNADataPreprocessor(DataPreprocessor):
+    def __init__(self, target_col_name='target'):
+        super().__init__()
+        self.target_col_name = target_col_name
+    
+    def apply(self, df):
+        processed_df = df.dropna(subset=[self.target_col_name])
+        return processed_df
