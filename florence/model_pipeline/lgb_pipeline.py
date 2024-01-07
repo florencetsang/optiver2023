@@ -9,10 +9,19 @@ class LGBModelPipeline(ModelPipeline):
         self.model = lgb.LGBMRegressor(objective='regression_l1', n_estimators=50)
     
     def _train(self, train_X, train_Y, eval_X, eval_Y):
-        self.model.fit(train_X, train_Y, 
-                eval_set=[(eval_X, eval_Y)], 
-                callbacks=[lgb.early_stopping(100)]
-            )
+        eval_res = {}
+        eval_set = self._get_eval_set(eval_X, eval_Y)
+        self.model.fit(
+            train_X,
+            train_Y, 
+            eval_set=eval_set,
+            eval_metric='l1',
+            callbacks=[
+                lgb.early_stopping(100),
+                lgb.record_evaluation(eval_res)
+            ]
+        )
+        return eval_res
     
     def get_name(self):
         return "lgb"
