@@ -7,11 +7,13 @@ class DefaultTrainPipeline():
             self,
             model_pipeline_factory: ModelPipelineFactory,
             train_eval_data_generator: TrainEvalDataGenerator,
-            model_post_processor: ModelPostProcessor
+            model_post_processor: ModelPostProcessor,
+            callbacks
     ):
         self.model_pipeline_factory = model_pipeline_factory
         self.train_eval_data_generator = train_eval_data_generator
         self.model_post_processor = model_post_processor
+        self.callbacks = callbacks
     
     def train(self, df_train):
         print(f"generate data")
@@ -45,4 +47,10 @@ class DefaultTrainPipeline():
             print(f"Training fold {fold} - end")
         
         print(f"finished training, num_train_eval_sets: {num_train_eval_sets}")
-        return models, model_res, train_dfs, eval_dfs, num_train_eval_sets
+
+        callback_results = []
+        for callback in self.callbacks:
+            callback_res = callback.on_callback(models, model_res, train_dfs, eval_dfs, num_train_eval_sets)
+            callback_results.append(callback_res)
+
+        return models, model_res, train_dfs, eval_dfs, num_train_eval_sets, callback_results
