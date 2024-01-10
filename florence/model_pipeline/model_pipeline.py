@@ -1,4 +1,4 @@
-from ml_utils import MLUtils
+from utils.ml_utils import MLUtils
 
 class ModelPipeline:
     model = None
