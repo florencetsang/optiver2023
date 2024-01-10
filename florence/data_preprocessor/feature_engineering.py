@@ -1,6 +1,6 @@
 import numpy as np 
 from itertools import combinations
-from data_preprocessor import DataPreprocessor
+from data_preprocessor.data_preprocessor import DataPreprocessor
 
 class EnrichDFDataPreprocessor(DataPreprocessor):
     def calculate_pressure(self, df):
