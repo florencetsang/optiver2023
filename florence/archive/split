@@ -1,0 +1,7 @@
+split_day = 435
+
+
+0- 435 Train
+0-390 df_offline_train 
+391-435 offline_split 
+436 - 480 Valid
