@@ -16,6 +16,7 @@ class EnrichDFDataPreprocessor(DataPreprocessor):
 
         df_ = df.copy()
 
+        # Imbalance features
         df_['imb_s1'] = df.eval('(bid_size-ask_size)/(bid_size+ask_size)')
         df_['imb_s2'] = df.eval('(imbalance_size-matched_size)/(matched_size+imbalance_size)')  
 
@@ -29,8 +30,16 @@ class EnrichDFDataPreprocessor(DataPreprocessor):
 
             df_[f'{a}_{b}_{c}_imb2'] = np.where(mid.eq(mini), np.nan, (maxi - mid) / (mid - mini))
 
+        # From Andy - Pressure & Inefficiency
         df_['pressure'] = self.calculate_pressure(df)
         df_['inefficiency'] = df.eval('imbalance_size/matched_size')
+  
+        # Rolling based features
+         # df_['wap_30'] = df.groupby(['stock_id', 'date_id'])['wap'].rolling(window=3,min_periods=3).mean()  
+        df_['wap_30'] = df.groupby(['stock_id', 'date_id'])['wap'].transform(lambda s: s.rolling(3, min_periods=1).mean())
+        df_['wap_60'] = df.groupby(['stock_id', 'date_id'])['wap'].transform(lambda s: s.rolling(6, min_periods=3).mean())
+        df_['wap_120'] = df.groupby(['stock_id', 'date_id'])['wap'].transform(lambda s: s.rolling(12, min_periods=6).mean())
+        df_['wap_120'] = df.groupby(['stock_id', 'date_id'])['wap'].transform(lambda s: s.rolling(24, min_periods=12).mean())
 
         return df_
 
