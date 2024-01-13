@@ -46,7 +46,7 @@ class MovingAvgPreProcessor(DataPreprocessor):
         # col_name = self._get_col_name(window, min_periods)
         return f"{self.feature_name}_mov_avg_{window}_{min_periods}"  # e.g. wap_mov_avg_3_1
 
-    def _calc_mov_avg2(self, orig_df, grouped_df, window, min_periods):
+    def _calc_mov_avg(self, orig_df, grouped_df, window, min_periods):
         mov_avg_col_name = self._get_mov_avg_col_name(window, min_periods)
         mov_avg_df = grouped_df[self.feature_name].rolling(window=window, min_periods=min_periods).mean()
         mov_avg_df = mov_avg_df.sort_index()
@@ -58,10 +58,10 @@ class MovingAvgPreProcessor(DataPreprocessor):
         # sort=False --> Sort group keys. Get better performance by turning this off.
         # consolidated_mov_avg_df = pd.DataFrame()
         grouped_df = df.groupby(['stock_id', 'date_id'], as_index=False, sort=False)
-        df = self._calc_mov_avg2(df, grouped_df, 3, 1)
-        df = self._calc_mov_avg2(df, grouped_df, 6, 3)
-        df = self._calc_mov_avg2(df, grouped_df, 12, 6)
-        df = self._calc_mov_avg2(df, grouped_df, 24, 12)
+        df = self._calc_mov_avg(df, grouped_df, 3, 1)
+        df = self._calc_mov_avg(df, grouped_df, 6, 3)
+        df = self._calc_mov_avg(df, grouped_df, 12, 6)
+        df = self._calc_mov_avg(df, grouped_df, 24, 12)
         return df
 
 class RemoveIrrelevantFeaturesDataPreprocessor(DataPreprocessor):
