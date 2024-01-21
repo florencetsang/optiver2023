@@ -82,3 +82,11 @@ class DropTargetNADataPreprocessor(DataPreprocessor):
     def apply(self, df):
         processed_df = df.dropna(subset=[self.target_col_name])
         return processed_df
+
+class AddStockDateIdxDataPreprocessor(DataPreprocessor):
+    def apply(self, df):
+        # index_col_id: int
+        # TODO: assumed # of stocks < 1000 now
+        # https://stackoverflow.com/questions/19377969/combine-two-columns-of-text-in-pandas-dataframe
+        df["index_col_id"] = df["date_id"] * 1000 + df["stock_id"]
+        return df

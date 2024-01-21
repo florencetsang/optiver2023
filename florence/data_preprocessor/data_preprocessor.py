@@ -14,6 +14,22 @@ class CompositeDataPreprocessor(DataPreprocessor):
             processed_df = processor.apply(processed_df)
         return processed_df
 
+# TODO: Is it a preprocessor?
+class TimeSeriesDataPreprocessor:
+    def apply(self, df):
+        # https://pandas.pydata.org/docs/reference/api/pandas.DataFrame.sort_values.html
+        df_sorted = df.sort_values("index_col_id", ignore_index=True)
+
+        # https://stackoverflow.com/questions/38013778/is-there-any-numpy-group-by-function
+        # https://numpy.org/doc/stable/reference/generated/numpy.unique.html
+        index_col_id_uniq, index_col_id_uniq_idx = np.unique(df_sorted["index_col_id"].values, axis=0, return_index=True)
+        df_train_arr = np.split(df_sorted.values, index_col_id_uniq_idx[1:])
+        # https://numpy.org/doc/stable/reference/generated/numpy.stack.html
+        df_train_arr = np.stack(df_train_arr, axis=0)
+        # df_train_arr: [stock-date combination, time per stock-date (i.e. 55), # of features]
+
+        return df_train_arr
+
 class ReduceMemUsageDataPreprocessor(DataPreprocessor):
     def __init__(self, verbose=0):
         self.verbose = verbose
