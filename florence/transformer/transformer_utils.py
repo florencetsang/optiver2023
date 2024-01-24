@@ -21,7 +21,8 @@ def get_batch(data_arr, target_col_idx, batch_idx, batch_size):
     
     # TODO: work on window size, full window of 55 now
     start_idx = batch_idx * batch_size
-    batch = data_arr[start_idx:start_idx + batch_size]
+    end_idx = min(start_idx + batch_size, data_arr.shape[0])
+    batch = data_arr[start_idx:end_idx]
     
     # construct targets
     target_col_mask = get_target_col_mask(batch, target_col_idx)
