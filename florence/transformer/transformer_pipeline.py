@@ -3,7 +3,7 @@ import time
 import torch
 from torch import nn
 
-from transformer.transformer_utils import get_batch
+from transformer.transformer_utils import get_batch, get_batch_gpu
 
 from utils.ml_utils import ModelLogger
 
@@ -28,14 +28,14 @@ class TransformerPipeline:
         self.model.train()  # turn on train mode
         total_loss = 0.0
         start_time = time.time()
+        
+        data_arr = data_arr.astype("float32")
+        data_tensor = torch.from_numpy(data_arr).to(self.device)
 
         n_batches = self._get_total_num_of_batches(data_arr, batch_size, first_n_batches_only)
         processed_samples = 0
         for batch_idx in range(n_batches):
-            data, targets = get_batch(data_arr, target_col_idx, batch_idx, batch_size)
-            # convert numpy array to pytorch tensor
-            data = torch.from_numpy(data).to(self.device)
-            targets = torch.from_numpy(targets).to(self.device)
+            data, targets = get_batch_gpu(data_tensor, target_col_idx, batch_idx, batch_size)
             # apply transformer model
             # output: [batch_size, window_size] (e.g. [20, 55]), matching expected targets
             output = self.model(data, logger=self.train_logger)
@@ -64,14 +64,14 @@ class TransformerPipeline:
     def evaluate_transformer(self, data_arr, target_col_idx, batch_size):
         self.model.eval()  # turn on evaluation mode
         total_loss = 0.0
+        
+        data_arr = data_arr.astype("float32")
+        data_tensor = torch.from_numpy(data_arr).to(self.device)
 
         with torch.no_grad():
             n_batches = self._get_total_num_of_batches(data_arr, batch_size, -1)
             for batch_idx in range(n_batches):
-                data, targets = get_batch(data_arr, target_col_idx, batch_idx, batch_size)
-                # convert numpy array to pytorch tensor
-                data = torch.from_numpy(data).to(self.device)
-                targets = torch.from_numpy(targets).to(self.device)
+                data, targets = get_batch_gpu(data_tensor, target_col_idx, batch_idx, batch_size)
                 # apply transformer model
                 # output: [batch_size, window_size] (e.g. [20, 55]), matching expected targets
                 output = self.model(data, logger=self.eval_logger)
