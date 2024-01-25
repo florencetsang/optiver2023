@@ -8,13 +8,16 @@ from transformer.transformer_utils import get_batch
 from utils.ml_utils import ModelLogger
 
 class TransformerPipeline:
-    def __init__(self, model: nn.Module, optimizer, criterion, train_logger: ModelLogger, eval_logger: ModelLogger, test_logger: ModelLogger):
-        self.model = model
+    def __init__(self, model: nn.Module, optimizer, criterion, pipeline_logger: ModelLogger, train_logger: ModelLogger, eval_logger: ModelLogger, test_logger: ModelLogger, device):
+        self.model = model.to(device)
         self.optimizer = optimizer
         self.criterion = criterion
+        self.pipeline_logger = pipeline_logger
         self.train_logger = train_logger
         self.eval_logger = eval_logger
         self.test_logger = test_logger
+        self.device = device
+        self.pipeline_logger.log(f"device: {device}")
 
     def _get_total_num_of_batches(self, data_arr, batch_size, first_n_batches_only=-1):
         if first_n_batches_only > -1:
@@ -31,8 +34,8 @@ class TransformerPipeline:
         for batch_idx in range(n_batches):
             data, targets = get_batch(data_arr, target_col_idx, batch_idx, batch_size)
             # convert numpy array to pytorch tensor
-            data = torch.from_numpy(data)
-            targets = torch.from_numpy(targets)
+            data = torch.from_numpy(data).to(self.device)
+            targets = torch.from_numpy(targets).to(self.device)
             # apply transformer model
             # output: [batch_size, window_size] (e.g. [20, 55]), matching expected targets
             output = self.model(data, logger=self.train_logger)
@@ -43,12 +46,16 @@ class TransformerPipeline:
             n_samples = targets.shape[0]
             processed_samples += n_samples
             total_loss += loss_val * targets.shape[0]
-            self.train_logger.log(f"targets: {targets.shape}, output: {output.shape}, loss_val: {loss_val}, total_loss: {total_loss}, n_samples: {n_samples}, processed_samples: {processed_samples}")
+            self.pipeline_logger.log(f"targets: {targets.shape}, output: {output.shape}, loss_val: {loss_val}, total_loss: {total_loss}, n_samples: {n_samples}, processed_samples: {processed_samples}")
 
+            # self.pipeline_logger.log(f"test 1 {self.model.final_linear.bias} {loss.grad} {self.model.final_linear.bias.grad}")
             self.optimizer.zero_grad()
             loss.backward()
-            torch.nn.utils.clip_grad_norm_(self.model.parameters(), 0.5)
+            # self.pipeline_logger.log(f"test 2 {self.model.final_linear.bias} {loss.grad} {self.model.final_linear.bias.grad}")
+            grad_norm = torch.nn.utils.clip_grad_norm_(self.model.parameters(), 0.5)
+            # self.pipeline_logger.log(f"test 3 {self.model.final_linear.bias} {loss.grad} {self.model.final_linear.bias.grad} {grad_norm}")
             self.optimizer.step()
+            # self.pipeline_logger.log(f"test 4 {self.model.final_linear.bias} {loss.grad} {self.model.final_linear.bias.grad} {grad_norm}")
 
         if processed_samples == 0:
             return 0.0
@@ -63,8 +70,8 @@ class TransformerPipeline:
             for batch_idx in range(n_batches):
                 data, targets = get_batch(data_arr, target_col_idx, batch_idx, batch_size)
                 # convert numpy array to pytorch tensor
-                data = torch.from_numpy(data)
-                targets = torch.from_numpy(targets)
+                data = torch.from_numpy(data).to(self.device)
+                targets = torch.from_numpy(targets).to(self.device)
                 # apply transformer model
                 # output: [batch_size, window_size] (e.g. [20, 55]), matching expected targets
                 output = self.model(data, logger=self.eval_logger)
@@ -80,12 +87,13 @@ class TransformerPipeline:
         self.model.eval()  # turn on evaluation mode
         with torch.no_grad():
             # convert numpy array to pytorch tensor
-            data_arr = torch.from_numpy(data_arr)
+            data_arr = torch.from_numpy(data_arr).to(self.device)
             # apply transformer model
             # output: [batch_size, window_size] (e.g. [1, 10] for 10th prediction during testing)
             # batch_size must be 1 (predicting one at a time)
             # only the last number is significant, which captures information from sample 1 - 10 features
             output = self.model(data_arr, logger=self.test_logger)
+            output = output.cpu()
             output = output.numpy()
             output = output[0, -1]
         return output

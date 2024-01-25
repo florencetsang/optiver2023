@@ -19,6 +19,7 @@ class TransformerModel(nn.Module):
         super().__init__()
         self.model_type = 'Transformer'
         self.input_ff = nn.Linear(input_features, d_model)
+        self.input_ff_sigmoid = nn.Sigmoid()
         encoder_layers = TransformerEncoderLayer(d_model, nhead, d_hid, dropout, batch_first=True)
         self.transformer_encoder = TransformerEncoder(encoder_layers, nlayers)
         self.d_model = d_model
@@ -37,6 +38,7 @@ class TransformerModel(nn.Module):
         output = src
         logger.log(f"{output.size()}")
         output = self.input_ff(output)
+        output = self.input_ff_sigmoid(output)
         logger.log(f"input_ff - {output.size()}")
         if src_mask is None:
             """Generate a square causal mask for the sequence. The masked positions are filled with float('-inf').
