@@ -1,4 +1,6 @@
 import numpy as np
+import time					
+
 
 class DataPreprocessor:
     def apply(self, df):
@@ -11,8 +13,12 @@ class CompositeDataPreprocessor(DataPreprocessor):
     def apply(self, df):
         processed_df = df
         for processor in self.processors:
-            print(f"Processing {processor.__class__.__name__}...")
+            processor_name = processor.__class__.__name__
+            print(f"Processing {processor_name}...")
+            tic = time.perf_counter() # Start Time
             processed_df = processor.apply(processed_df)
+            toc = time.perf_counter() # End Time
+            print(f"{processor_name} took {toc-tic}. New df shape: {processed_df}.")
         return processed_df
 
 class ReduceMemUsageDataPreprocessor(DataPreprocessor):
@@ -51,6 +57,8 @@ class ReduceMemUsageDataPreprocessor(DataPreprocessor):
             print(f"Memory usage after optimization is: {end_mem:.2f} MB")
             decrease = 100 * (start_mem - end_mem) / start_mem
             print(f"Decreased by {decrease:.2f}%")
+            print(f"dtypes:")
+            print(df.dtypes)
 
         return df
 

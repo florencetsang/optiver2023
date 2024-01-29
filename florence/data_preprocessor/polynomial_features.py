@@ -9,5 +9,5 @@ class PolynomialFeaturesPreProcessor(DataPreprocessor):
 
     def apply(self, df):
         poly = PolynomialFeatures(2, interaction_only=True)
-        df = poly.fit_transform(df)
+        df = poly.fit_transform(df).astype("float32")
         return df
