@@ -11,6 +11,7 @@ class CompositeDataPreprocessor(DataPreprocessor):
     def apply(self, df):
         processed_df = df
         for processor in self.processors:
+            print(f"Processing {processor.__class__.__name__}...")
             processed_df = processor.apply(processed_df)
         return processed_df
 
@@ -45,10 +46,15 @@ class ReduceMemUsageDataPreprocessor(DataPreprocessor):
                         df[col] = df[col].astype(np.float32)
 
         if self.verbose:
-            logger.info(f"Memory usage of dataframe is {start_mem:.2f} MB")
+            print(f"Memory usage of dataframe is {start_mem:.2f} MB")
             end_mem = df.memory_usage().sum() / 1024**2
-            logger.info(f"Memory usage after optimization is: {end_mem:.2f} MB")
+            print(f"Memory usage after optimization is: {end_mem:.2f} MB")
             decrease = 100 * (start_mem - end_mem) / start_mem
-            logger.info(f"Decreased by {decrease:.2f}%")
+            print(f"Decreased by {decrease:.2f}%")
 
         return df
+
+class FillNaPreProcessor(DataPreprocessor):
+    def apply(self, df):
+       df = df.fillna(0.0)
+       return df
