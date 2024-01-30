@@ -16,5 +16,5 @@ class PolynomialFeaturesPreProcessor(DataPreprocessor):
         x_polynomial_features = poly.fit_transform(x).astype("float32")
         new_features = poly.get_feature_names_out(x.columns)
         output_df = pd.DataFrame(x_polynomial_features, columns = new_features)       
-        df_concat = pd.concat([output_df, y], axis=1) 
+        df_concat = pd.concat([output_df, y], axis=1).reindex(output_df.index)
         return df_concat
