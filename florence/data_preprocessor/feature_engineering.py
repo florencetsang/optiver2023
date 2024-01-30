@@ -3,6 +3,7 @@ import pandas as pd
 from itertools import combinations
 from data_preprocessor.data_preprocessor import DataPreprocessor
 from tslearn.metrics import dtw
+from tslearn.clustering import TimeSeriesKMeans
 class EnrichDFDataPreprocessor(DataPreprocessor):
     def calculate_pressure(self, df):
         return np.where(
@@ -119,3 +120,24 @@ class DTWFeaturesDataPreprocessor(DataPreprocessor):
         df['dtw_distance'] = pd.Series(dtw_distances, index=df.index)
         processed_df = df.dropna(subset=['dtw_distance', 'target'])
         return processed_df
+
+class DTWKMeansPreprocessor:
+    def __init__(self, n_clusters=3, dtw_metric=True, target_col_name='wap'):
+        self.n_clusters = n_clusters
+        self.dtw_metric = dtw_metric
+        self.target_col_name = target_col_name
+        if dtw_metric:
+            self.model = TimeSeriesKMeans(n_clusters=n_clusters, metric="dtw")
+        else:
+            self.model = TimeSeriesKMeans(n_clusters=n_clusters, metric="euclidean")
+
+    def fit_predict(self, df):
+
+        time_series_data = np.stack(df[self.target_col_name].apply(lambda x: np.array(x)).values)
+        time_series_data = time_series_data.reshape((time_series_data.shape[0], time_series_data.shape[1], 1))
+        
+        labels = self.model.fit_predict(time_series_data)
+
+        df['cluster'] = labels
+        processed_df = df.dropna(subset=['cluster'])
+        return processed_df 
