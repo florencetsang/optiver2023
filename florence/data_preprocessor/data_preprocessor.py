@@ -18,7 +18,7 @@ class CompositeDataPreprocessor(DataPreprocessor):
             tic = time.perf_counter() # Start Time
             processed_df = processor.apply(processed_df)
             toc = time.perf_counter() # End Time
-            print(f"{processor_name} took {toc-tic}. New df shape: {processed_df}.")
+            print(f"{processor_name} took {(toc-tic):.2f}s. New df shape: {processed_df.shape}.")
         return processed_df
 
 class ReduceMemUsageDataPreprocessor(DataPreprocessor):

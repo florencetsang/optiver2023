@@ -1,13 +1,20 @@
 import numpy as np
+import pandas as pd
 from sklearn.preprocessing import PolynomialFeatures
 from data_preprocessor.data_preprocessor import DataPreprocessor
 
 class PolynomialFeaturesPreProcessor(DataPreprocessor):
-    # def __init__(self, feature_name):
-    #     super().__init__()
-    #     self.feature_name = feature_name
+    def __init__(self, target_col_name='target'):
+        super().__init__()
+        self.target_col_name = target_col_name
 
     def apply(self, df):
         poly = PolynomialFeatures(2, interaction_only=True)
-        df = poly.fit_transform(df).astype("float32")
-        return df
+        features = [c for c in df.columns if c != self.target_col_name]
+        x = df[features]
+        y = df[self.target_col_name]       
+        x_polynomial_features = poly.fit_transform(x).astype("float32")
+        new_features = poly.get_feature_names_out(x.columns)
+        output_df = pd.DataFrame(x_polynomial_features, columns = new_features)       
+        df_concat = pd.concat([output_df, y], axis=1) 
+        return df_concat
