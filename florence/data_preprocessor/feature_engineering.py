@@ -2,7 +2,7 @@ import numpy as np
 import pandas as pd
 from itertools import combinations
 from data_preprocessor.data_preprocessor import DataPreprocessor
-
+from tslearn.metrics import dtw
 class EnrichDFDataPreprocessor(DataPreprocessor):
     def calculate_pressure(self, df):
         return np.where(
@@ -81,4 +81,41 @@ class DropTargetNADataPreprocessor(DataPreprocessor):
     
     def apply(self, df):
         processed_df = df.dropna(subset=[self.target_col_name])
+        return processed_df
+
+class DTWFeaturesDataPreprocessor(DataPreprocessor):
+    def __init__(self, target_col_name='wap'):
+        self.target_col_name = target_col_name
+    
+    def calculate_dtw_distance(self, series1, series2):
+        s1 = series1.values.reshape(-1, 1)
+        s2 = series2.values.reshape(-1, 1)
+        return dtw(s1, s2)
+    
+    def apply(self, df):
+        df = df.sort_values(['stock_id', 'time_id', 'seconds_in_bucket'])
+        grouped = df.groupby(['stock_id', 'time_id'])
+        
+        dtw_distances = []
+        
+
+        for (stock_id, time_id), group in grouped:
+            if len(group) < 2:
+                dtw_distances.append(np.nan)
+                continue
+            
+            current_wap = group[self.target_col_name]
+            if (stock_id, time_id) == grouped.ngroup() - 1:
+                dtw_distances.append(np.nan)
+            else:
+                next_group = grouped.ngroup() + 1
+                next_wap = df.loc[(df['stock_id'] == stock_id) & (df['time_id'] == next_group), self.target_col_name]
+                if next_wap.empty:
+                    dtw_distances.append(np.nan)
+                else:
+                    distance = self.calculate_dtw_distance(current_wap, next_wap)
+                    dtw_distances.append(distance)
+
+        df['dtw_distance'] = pd.Series(dtw_distances, index=df.index)
+        processed_df = df.dropna(subset=['dtw_distance', 'target'])
         return processed_df
