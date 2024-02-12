@@ -48,7 +48,7 @@ class MovingAvgPreProcessor(DataPreprocessor):
 
     def _calc_mov_avg(self, orig_df, grouped_df, window, min_periods):
         mov_avg_col_name = self._get_mov_avg_col_name(window, min_periods)
-        mov_avg_df = grouped_df[self.feature_name].rolling(window=window, min_periods=min_periods).mean()
+        mov_avg_df = grouped_df[self.feature_name].rolling(window=window, min_periods=min_periods).mean().astype(np.float32)
         mov_avg_df = mov_avg_df.sort_index()
         orig_df[mov_avg_col_name] = mov_avg_df[self.feature_name]
         return orig_df
