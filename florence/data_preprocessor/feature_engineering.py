@@ -4,6 +4,7 @@ from itertools import combinations
 from data_preprocessor.data_preprocessor import DataPreprocessor
 from tslearn.metrics import dtw
 from tslearn.clustering import TimeSeriesKMeans
+import time
 class EnrichDFDataPreprocessor(DataPreprocessor):
     def calculate_pressure(self, df):
         return np.where(
@@ -84,60 +85,18 @@ class DropTargetNADataPreprocessor(DataPreprocessor):
         processed_df = df.dropna(subset=[self.target_col_name])
         return processed_df
 
-class DTWFeaturesDataPreprocessor(DataPreprocessor):
-    def __init__(self, target_col_name='wap'):
-        self.target_col_name = target_col_name
-    
-    def calculate_dtw_distance(self, series1, series2):
-        s1 = series1.values.reshape(-1, 1)
-        s2 = series2.values.reshape(-1, 1)
-        return dtw(s1, s2)
-    
-    def apply(self, df):
-        df = df.sort_values(['stock_id', 'time_id', 'seconds_in_bucket'])
-        grouped = df.groupby(['stock_id', 'time_id'])
-        
-        dtw_distances = []
-        
 
-        for (stock_id, time_id), group in grouped:
-            if len(group) < 2:
-                dtw_distances.append(np.nan)
-                continue
-            
-            current_wap = group[self.target_col_name]
-            if (stock_id, time_id) == grouped.ngroup() - 1:
-                dtw_distances.append(np.nan)
-            else:
-                next_group = grouped.ngroup() + 1
-                next_wap = df.loc[(df['stock_id'] == stock_id) & (df['time_id'] == next_group), self.target_col_name]
-                if next_wap.empty:
-                    dtw_distances.append(np.nan)
-                else:
-                    distance = self.calculate_dtw_distance(current_wap, next_wap)
-                    dtw_distances.append(distance)
+class DTWKMeansPreprocessor(DataPreprocessor):
 
-        df['dtw_distance'] = pd.Series(dtw_distances, index=df.index)
-        processed_df = df.dropna(subset=['dtw_distance', 'target'])
-        return processed_df
-
-class DTWKMeansPreprocessor:
-    def __init__(self, n_clusters=3, dtw_metric=True, target_col_name='wap'):
+    def __init__(self, n_clusters=3, target_col_name='wap'):
         self.n_clusters = n_clusters
-        self.dtw_metric = dtw_metric
         self.target_col_name = target_col_name
-        if dtw_metric:
-            self.model = TimeSeriesKMeans(n_clusters=n_clusters, metric="dtw")
-        else:
-            self.model = TimeSeriesKMeans(n_clusters=n_clusters, metric="euclidean")
-
-    def fit_predict(self, df):
-
-        time_series_data = np.stack(df[self.target_col_name].apply(lambda x: np.array(x)).values)
+        self.model = TimeSeriesKMeans(n_clusters=n_clusters, metric="dtw")
+    def apply(self, df):
+        pivoted_df = df.pivot(index='time_id', columns='stock_id', values=self.target_col_name).fillna(0)
+        time_series_data = pivoted_df.to_numpy()
         time_series_data = time_series_data.reshape((time_series_data.shape[0], time_series_data.shape[1], 1))
-        
         labels = self.model.fit_predict(time_series_data)
-
-        df['cluster'] = labels
+        df['cluster'] = labels[df['time_id']]
         processed_df = df.dropna(subset=['cluster'])
-        return processed_df 
+        return processed_df
