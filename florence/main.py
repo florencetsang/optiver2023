@@ -8,10 +8,16 @@ from model_pipeline.lgb_pipeline import LGBModelPipelineFactory
 from model_post_processor.model_post_processor import CompositeModelPostProcessor, SaveModelPostProcessor
 
 from train_pipeline.train_pipeline import DefaultTrainPipeline
+from train_pipeline.train_optuna_pipeline import DefaultOptunaTrainPipeline
 
 from train_pipeline.train_pipeline_callbacks import MAECallback
 from utils.scoring_utils import ScoringUtils
 from model_pipeline.dummy_models import BaselineEstimator
+
+import optuna.integration.lightgbm as lgb
+import optuna
+
+import numpy as np
 
 
 N_fold = 5
@@ -22,39 +28,64 @@ processors = [
     EnrichDFDataPreprocessor(),
     MovingAvgPreProcessor("wap"),
     DropTargetNADataPreprocessor(),
+# RemoveIrrelevantFeaturesDataPreprocessor(['date_id','time_id', 'row_id'])
+    RemoveIrrelevantFeaturesDataPreprocessor(['stock_id', 'date_id','time_id', 'row_id'])
+]
+
+test_processors = [
+    EnrichDFDataPreprocessor(),
+    MovingAvgPreProcessor("wap"),
+    # DropTargetNADataPreprocessor(),
+# RemoveIrrelevantFeaturesDataPreprocessor(['date_id','time_id', 'row_id'])
     RemoveIrrelevantFeaturesDataPreprocessor(['stock_id', 'date_id','time_id', 'row_id'])
 ]
 processor = CompositeDataPreprocessor(processors)
+test_processors = CompositeDataPreprocessor(test_processors)
 
 # DATA_PATH = '/kaggle/input'
 DATA_PATH = '..'
 df_train, df_test, revealed_targets, sample_submission = load_data_from_csv(DATA_PATH)
 print(df_train.columns)
 
+raw_data = df_train
+# df_train = df_train[:100000]
 df_train = processor.apply(df_train)
+# df_test = test_processors.apply(df_test)
 print(df_train.shape[0])
 print(df_train.columns)
 # display(df_train.tail())
 
 
 
-
-
-
 default_data_generator = DefaultTrainEvalDataGenerator()
 k_fold_data_generator = ManualKFoldDataGenerator(n_fold=N_fold)
-time_series_k_fold_data_generator = TimeSeriesKFoldDataGenerator(n_fold=N_fold)
+time_series_k_fold_data_generator = TimeSeriesKFoldDataGenerator(n_fold=N_fold, test_set_ratio=0.1)
 
 model_post_processor = CompositeModelPostProcessor([
     SaveModelPostProcessor(save_dir=model_save_dir)
 ])
 
 # lgb_pipeline = DefaultTrainPipeline(LGBModelPipelineFactory(), k_fold_data_generator, model_post_processor, [MAECallback()])
-lgb_pipeline = DefaultTrainPipeline(LGBModelPipelineFactory(), time_series_k_fold_data_generator, model_post_processor, [MAECallback()])
+optuna_lgb_pipeline = DefaultOptunaTrainPipeline(LGBModelPipelineFactory(), time_series_k_fold_data_generator, model_post_processor, [MAECallback()])
 
-lgb_models, lgb_model_res, lgb_train_dfs, lgb_eval_dfs, lgb_num_train_eval_sets, lgb_callback_results = lgb_pipeline.train(df_train)
+# hyper parameter tunning with optuna
+# lgb_models, lgb_model_res, lgb_train_dfs, lgb_eval_dfs, lgb_num_train_eval_sets, lgb_callback_results = optuna_lgb_pipeline.train(df_train)
 
-lgb_avg_mae = ScoringUtils.calculate_mae(lgb_models, lgb_eval_dfs)
+# train model with param
+# lgb_models, lgb_train_dfs, lgb_eval_dfs = optuna_lgb_pipeline.train_with_param(
+#     df_train,
+#     params={'n_estimators': 2700, 'reg_alpha': 1.666271247059715, 'reg_lambda': 0.0013314248446567097, 'colsample_bytree': 0.6512412430910787, 'subsample': 0.5550654570575708, 'learning_rate': 0.0124880163018859, 'max_depth': 11, 'num_leaves': 354, 'min_child_samples': 71,
+#             'objective': 'regression_l1', 'random_state': 42, 'force_col_wise': True, "verbosity": -1}
+# )
+
+# load and eval model
+lgb_models, lgb_train_dfs, lgb_eval_dfs = optuna_lgb_pipeline.load_model_eval(
+    df_train,
+    "best_models/best_model_2023_02_19"
+)
+
+
+lgb_avg_mae = ScoringUtils.calculate_mae([lgb_models], [lgb_eval_dfs])
 print(lgb_avg_mae)
 
 baseline_avg_mae = ScoringUtils.calculate_mae([BaselineEstimator()], [df_train])
