@@ -1,13 +1,17 @@
 import lightgbm as lgb
-from model_pipeline.model_pipeline import ModelPipeline, ModelPipelineFactory
+from florence.model_pipeline.model_pipeline import ModelPipeline, ModelPipelineFactory
+import optuna
+from florence.utils.scoring_utils import ScoringUtils
+import numpy as np
+import sklearn
 
 class LGBModelPipeline(ModelPipeline):
     def __init__(self):
         super().__init__()
         
     def init_model(self):
-        self.model = lgb.LGBMRegressor(objective='regression_l1', n_estimators=50)
-    
+        self.model = lgb.LGBMRegressor(objective='regression_l1', n_estimators=50, random_state=42)
+
     def _train(self, train_X, train_Y, eval_X, eval_Y):
         eval_res = {}
         eval_set = self._get_eval_set(eval_X, eval_Y)

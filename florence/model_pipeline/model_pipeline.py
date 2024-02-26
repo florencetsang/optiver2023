@@ -7,11 +7,11 @@ class ModelPipeline:
         pass
     
     def train(self, df_train, df_eval):
-        train_X, train_Y, eval_X, eval_Y = self._create_XY(df_train, df_eval)
+        train_X, train_Y, eval_X, eval_Y = self.create_XY(df_train, df_eval)
         res = self._train(train_X, train_Y, eval_X, eval_Y)
         return res
     
-    def _create_XY(self, df_train, df_eval):
+    def create_XY(self, df_train, df_eval):
         train_X, train_Y = MLUtils.create_XY(df_train)
         eval_X, eval_Y = MLUtils.create_XY(df_eval)
         return train_X, train_Y, eval_X, eval_Y
