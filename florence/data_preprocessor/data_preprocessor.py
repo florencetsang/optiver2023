@@ -1,4 +1,6 @@
 import numpy as np
+import time					
+
 
 class DataPreprocessor:
     def apply(self, df):
@@ -11,7 +13,12 @@ class CompositeDataPreprocessor(DataPreprocessor):
     def apply(self, df):
         processed_df = df
         for processor in self.processors:
+            processor_name = processor.__class__.__name__
+            print(f"Processing {processor_name}...")
+            tic = time.perf_counter() # Start Time
             processed_df = processor.apply(processed_df)
+            toc = time.perf_counter() # End Time
+            print(f"{processor_name} took {(toc-tic):.2f}s. New df shape: {processed_df.shape}.")
         return processed_df
 
 class ReduceMemUsageDataPreprocessor(DataPreprocessor):
@@ -45,10 +52,17 @@ class ReduceMemUsageDataPreprocessor(DataPreprocessor):
                         df[col] = df[col].astype(np.float32)
 
         if self.verbose:
-            logger.info(f"Memory usage of dataframe is {start_mem:.2f} MB")
+            print(f"Memory usage of dataframe is {start_mem:.2f} MB")
             end_mem = df.memory_usage().sum() / 1024**2
-            logger.info(f"Memory usage after optimization is: {end_mem:.2f} MB")
+            print(f"Memory usage after optimization is: {end_mem:.2f} MB")
             decrease = 100 * (start_mem - end_mem) / start_mem
-            logger.info(f"Decreased by {decrease:.2f}%")
+            print(f"Decreased by {decrease:.2f}%")
+            print(f"dtypes:")
+            print(df.dtypes)
 
         return df
+
+class FillNaPreProcessor(DataPreprocessor):
+    def apply(self, df):
+       df = df.fillna(0.0)
+       return df
