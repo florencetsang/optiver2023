@@ -35,7 +35,8 @@ processors = [
 ]
 
 test_processors = [
-    EnrichDFDataPreprocessor(),
+    BasicFeaturesPreprocessor(),
+    # DupletsTripletsPreprocessor()
     MovingAvgPreProcessor("wap"),
     # DropTargetNADataPreprocessor(),
     # RemoveIrrelevantFeaturesDataPreprocessor(['date_id','time_id', 'row_id'])
