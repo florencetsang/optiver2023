@@ -20,6 +20,13 @@ import optuna
 
 import numpy as np
 
+import sys
+
+model_name = sys.argv[0]
+# model_name = "best_model_2023_02_19"
+
+print("This is the name of the script:", sys.argv[0])
+
 N_fold = 5
 model_save_dir = './models/'
 
@@ -84,10 +91,10 @@ lgb_models, lgb_train_dfs, lgb_eval_dfs = optuna_lgb_pipeline.train_with_param(
 )
 
 # load and eval model
-# lgb_models, lgb_train_dfs, lgb_eval_dfs = optuna_lgb_pipeline.load_model_eval(
-#     df_train,
-#     "best_model_2023_02_19"
-# )
+lgb_models, lgb_train_dfs, lgb_eval_dfs = optuna_lgb_pipeline.load_model_eval(
+    df_train,
+    model_name
+)
 
 lgb_avg_mae = ScoringUtils.calculate_mae([lgb_models], lgb_eval_dfs)
 print(lgb_avg_mae)
