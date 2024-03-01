@@ -21,6 +21,6 @@ class PolynomialFeaturesPreProcessor(DataPreprocessor):
         output_df.reset_index(drop=True, inplace=True)               
         y.reset_index(drop=True, inplace=True)
         # df_concat = pd.concat([output_df, y], axis=1) # full set
-        # df_concat = pd.concat([output_df.iloc[:, 0:int(len(new_features)/2)] , y], axis=1) # first half
-        df_concat = pd.concat([output_df.iloc[:, int(len(new_features)/2):len(new_features)] , y], axis=1) #second half
+        df_concat = pd.concat([output_df.iloc[:, 0:int(len(new_features)/2)] , y], axis=1) # first half
+        # df_concat = pd.concat([output_df.iloc[:, int(len(new_features)/2):len(new_features)] , y], axis=1) #second half
         return df_concat
