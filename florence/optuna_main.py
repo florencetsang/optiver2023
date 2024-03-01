@@ -22,10 +22,10 @@ import numpy as np
 
 import sys
 
-model_name = sys.argv[0]
+model_name = sys.argv[1]
 # model_name = "best_model_2023_02_19"
 
-print("This is the name of the script:", sys.argv[0])
+print("Model name is", sys.argv[1])
 
 N_fold = 5
 model_save_dir = './models/'
@@ -85,16 +85,19 @@ best_param = optuna_lgb_pipeline.train(df_train)
 #     params={'n_estimators': 2700, 'reg_alpha': 1.666271247059715, 'reg_lambda': 0.0013314248446567097, 'colsample_bytree': 0.6512412430910787, 'subsample': 0.5550654570575708, 'learning_rate': 0.0124880163018859, 'max_depth': 11, 'num_leaves': 354, 'min_child_samples': 71,
 #             'objective': 'regression_l1', 'random_state': 42, 'force_col_wise': True, "verbosity": -1}
 # )
-lgb_models, lgb_train_dfs, lgb_eval_dfs = optuna_lgb_pipeline.train_with_param(
+lgb_models, lgb_train_dfs, lgb_eval_df, best_model_name = optuna_lgb_pipeline.train_with_param(
     df_train,
-    params=best_param
+    params=best_param,
+    name = model_name
 )
 
 # load and eval model
 lgb_models, lgb_train_dfs, lgb_eval_dfs = optuna_lgb_pipeline.load_model_eval(
     df_train,
-    model_name
+    model_name,
+    best_model_name
 )
+
 
 lgb_avg_mae = ScoringUtils.calculate_mae([lgb_models], lgb_eval_dfs)
 print(lgb_avg_mae)
