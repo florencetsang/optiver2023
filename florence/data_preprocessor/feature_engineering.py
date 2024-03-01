@@ -15,12 +15,12 @@ class BasicFeaturesPreprocessor(DataPreprocessor):
         df_ = df.copy()
 
         # Imbalance features
-        df_['imb_s1'] = df.eval('(bid_size-ask_size)/(bid_size+ask_size)')
-        df_['imb_s2'] = df.eval('(imbalance_size-matched_size)/(matched_size+imbalance_size)')  
+        df_['bid_ask_rr'] = df.eval('(bid_size-ask_size)/(bid_size+ask_size)')
+        df_['shortage_s2'] = df.eval('(imbalance_size-matched_size)/(matched_size+imbalance_size)')  
 
         # From Andy - Pressure & Inefficiency
         df_['pressure'] = self.calculate_pressure(df)
-        df_['inefficiency'] = df.eval('imbalance_size/matched_size')
+        df_['shortage_s1'] = df.eval('imbalance_size/matched_size')
 
         return df_
     
