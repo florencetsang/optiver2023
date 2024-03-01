@@ -231,7 +231,7 @@ class DefaultOptunaTrainPipeline():
         train_dfs, eval_dfs, num_train_eval_sets = self.train_eval_data_generator.generate(df_train)
         # pick last training testing pair for feature eval
         last_train_dfs, last_eval_dfs = train_dfs[-1], eval_dfs[-1]
-        lgbm_model = joblib.load(f"best_models/{best_model_name}")
+        lgbm_model = joblib.load(best_model_name)
         self.plot_feature_importance(lgbm_model, last_eval_dfs, model_name)
         self.plot_shap(lgbm_model, last_train_dfs, last_eval_dfs, model_name)
 
