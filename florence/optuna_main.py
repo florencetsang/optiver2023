@@ -1,6 +1,7 @@
 from load_data import load_data_from_csv
-from data_preprocessor.data_preprocessor import CompositeDataPreprocessor
-from data_preprocessor.feature_engineering import EnrichDFDataPreprocessor, MovingAvgPreProcessor, RemoveIrrelevantFeaturesDataPreprocessor, DropTargetNADataPreprocessor
+from data_preprocessor.data_preprocessor import CompositeDataPreprocessor, ReduceMemUsageDataPreprocessor, FillNaPreProcessor
+from data_preprocessor.feature_engineering import BasicFeaturesPreprocessor, DupletsTripletsPreprocessor, MovingAvgPreProcessor, RemoveIrrelevantFeaturesDataPreprocessor, DropTargetNADataPreprocessor
+from data_preprocessor.polynomial_features import PolynomialFeaturesPreProcessor
 from data_generator.data_generator import DefaultTrainEvalDataGenerator, ManualKFoldDataGenerator, TimeSeriesKFoldDataGenerator
 
 from model_pipeline.lgb_pipeline import LGBModelPipelineFactory
@@ -19,24 +20,33 @@ import optuna
 
 import numpy as np
 
+import sys
+
+model_name = sys.argv[1]
+# model_name = "best_model_2023_02_19"
+
+print("Model name is", sys.argv[1])
 
 N_fold = 5
 model_save_dir = './models/'
 
-
-processors = [
-    EnrichDFDataPreprocessor(),
-    MovingAvgPreProcessor("wap"),
-    DropTargetNADataPreprocessor(),
-# RemoveIrrelevantFeaturesDataPreprocessor(['date_id','time_id', 'row_id'])
-    RemoveIrrelevantFeaturesDataPreprocessor(['stock_id', 'date_id','time_id', 'row_id'])
+processors = [    
+    ReduceMemUsageDataPreprocessor(verbose=True),
+    BasicFeaturesPreprocessor(),
+    # DupletsTripletsPreprocessor(),
+    # MovingAvgPreProcessor("wap"),    
+    DropTargetNADataPreprocessor(),    
+    RemoveIrrelevantFeaturesDataPreprocessor(['stock_id', 'date_id','time_id', 'row_id']),
+    # FillNaPreProcessor(),
+    # PolynomialFeaturesPreProcessor(),
 ]
 
 test_processors = [
-    EnrichDFDataPreprocessor(),
+    BasicFeaturesPreprocessor(),
+    # DupletsTripletsPreprocessor()
     MovingAvgPreProcessor("wap"),
     # DropTargetNADataPreprocessor(),
-# RemoveIrrelevantFeaturesDataPreprocessor(['date_id','time_id', 'row_id'])
+    # RemoveIrrelevantFeaturesDataPreprocessor(['date_id','time_id', 'row_id'])
     RemoveIrrelevantFeaturesDataPreprocessor(['stock_id', 'date_id','time_id', 'row_id'])
 ]
 processor = CompositeDataPreprocessor(processors)
@@ -53,8 +63,6 @@ df_train = processor.apply(df_train)
 # df_test = test_processors.apply(df_test)
 print(df_train.shape[0])
 print(df_train.columns)
-# display(df_train.tail())
-
 
 
 default_data_generator = DefaultTrainEvalDataGenerator()
@@ -68,14 +76,8 @@ model_post_processor = CompositeModelPostProcessor([
 # lgb_pipeline = DefaultTrainPipeline(LGBModelPipelineFactory(), k_fold_data_generator, model_post_processor, [MAECallback()])
 optuna_lgb_pipeline = DefaultOptunaTrainPipeline(LGBModelPipelineFactory(), time_series_k_fold_data_generator, model_post_processor, [MAECallback()])
 
-
-
-
-
 # hyper parameter tunning with optuna
-# best_param = optuna_lgb_pipeline.train(df_train)
-
-
+best_param = optuna_lgb_pipeline.train(df_train)
 
 # train model with param
 # lgb_models, lgb_train_dfs, lgb_eval_dfs = optuna_lgb_pipeline.train_with_param(
@@ -83,17 +85,17 @@ optuna_lgb_pipeline = DefaultOptunaTrainPipeline(LGBModelPipelineFactory(), time
 #     params={'n_estimators': 2700, 'reg_alpha': 1.666271247059715, 'reg_lambda': 0.0013314248446567097, 'colsample_bytree': 0.6512412430910787, 'subsample': 0.5550654570575708, 'learning_rate': 0.0124880163018859, 'max_depth': 11, 'num_leaves': 354, 'min_child_samples': 71,
 #             'objective': 'regression_l1', 'random_state': 42, 'force_col_wise': True, "verbosity": -1}
 # )
-# lgb_models, lgb_train_dfs, lgb_eval_dfs = optuna_lgb_pipeline.train_with_param(
-#     df_train,
-#     params=best_param
-# )
-
-
+lgb_models, lgb_train_dfs, lgb_eval_df, best_model_name = optuna_lgb_pipeline.train_with_param(
+    df_train,
+    params=best_param,
+    name = model_name
+)
 
 # load and eval model
 lgb_models, lgb_train_dfs, lgb_eval_dfs = optuna_lgb_pipeline.load_model_eval(
     df_train,
-    "best_model_2023_02_19"
+    model_name,
+    best_model_name
 )
 
 

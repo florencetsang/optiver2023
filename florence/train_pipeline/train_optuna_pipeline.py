@@ -12,6 +12,7 @@ import matplotlib.pyplot as plt
 
 import joblib
 import optuna
+import time
 
 class DefaultOptunaTrainPipeline():
     def __init__(
@@ -96,13 +97,14 @@ class DefaultOptunaTrainPipeline():
         plt.imshow(shap_img)
 
     def train(self, df_train):
-        print(f"generate data")
+        print(f"Generate data")
         train_dfs, eval_dfs, num_train_eval_sets = self.train_eval_data_generator.generate(df_train)
 
         models = []
         model_res = []
 
-        print(f"start training, num_train_eval_sets: {num_train_eval_sets}")
+        print(f"Start train and tune, num_train_eval_sets: {num_train_eval_sets}")
+        tic = time.perf_counter() # Start Time
 
         def cross_validation_fcn(train_dfs, eval_dfs, param, early_stopping_flag=False):
             """
@@ -175,7 +177,7 @@ class DefaultOptunaTrainPipeline():
             return mean_score
 
         study = optuna.create_study(direction="minimize")
-        study.optimize(objective, n_trials=50)
+        study.optimize(objective, n_trials=10)
 
         print("Number of finished trials: {}".format(len(study.trials)))
 
@@ -188,8 +190,8 @@ class DefaultOptunaTrainPipeline():
         for key, value in best_trial.params.items():
             print("    {}: {}".format(key, value))
 
-        
-        print(f"finished training, num_train_eval_sets: {num_train_eval_sets}")
+        toc = time.perf_counter() # End Time
+        print(f"Finished train and tune. Took {(toc-tic):.2f}s.")
 
         # callback_results = []
         # for callback in self.callbacks:
@@ -207,7 +209,9 @@ class DefaultOptunaTrainPipeline():
 
         return best_param
 
-    def train_with_param(self, df_train, params):
+    def train_with_param(self, df_train, params, name):
+        print(f"Start training with params: {params}.")
+        tic = time.perf_counter() # Start Time
         train_dfs, eval_dfs, num_train_eval_sets = self.train_eval_data_generator.generate(df_train)
         # pick last training testing pair
         train_dfs, eval_dfs = train_dfs[-1], eval_dfs[-1]
@@ -217,15 +221,17 @@ class DefaultOptunaTrainPipeline():
         model_pipeline = self.model_pipeline_factory.create_model_pipeline()
         X_train_fold, y_train_fold, X_val_fold, y_val_fold = model_pipeline.create_XY(train_dfs, eval_dfs)
         lgbm_model.fit(X_train_fold, y_train_fold)
-        joblib.dump(lgbm_model, f"best_models/best_model_learning_rate_{params['learning_rate']}_n_estimators_{params['n_estimators']}")
+        best_model_name = f"best_models/best_model_learning_rate_{params['learning_rate']}_n_estimators_{params['n_estimators']}_{name}"
+        joblib.dump(lgbm_model, best_model_name)
+        toc = time.perf_counter() # End Time
+        print(f"Finished training with params. Took {(toc-tic):.2f}s.")
+        return lgbm_model, train_dfs, eval_dfs, best_model_name
 
-        return lgbm_model, train_dfs, eval_dfs
-
-    def load_model_eval(self, df_train, model_name):
+    def load_model_eval(self, df_train, model_name, best_model_name):
         train_dfs, eval_dfs, num_train_eval_sets = self.train_eval_data_generator.generate(df_train)
         # pick last training testing pair for feature eval
         last_train_dfs, last_eval_dfs = train_dfs[-1], eval_dfs[-1]
-        lgbm_model = joblib.load(f"best_models/{model_name}")
+        lgbm_model = joblib.load(best_model_name)
         self.plot_feature_importance(lgbm_model, last_eval_dfs, model_name)
         self.plot_shap(lgbm_model, last_train_dfs, last_eval_dfs, model_name)
 

@@ -6,5 +6,7 @@ optiver-trading-at-the-close/
 .conda/
 
 florence/models
+florence/img
+florence/best_models
 florence/florence_temp
 florence/**/*.pkl
