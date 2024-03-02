@@ -2,6 +2,7 @@ from load_data import load_data_from_csv
 from data_preprocessor.data_preprocessor import CompositeDataPreprocessor, ReduceMemUsageDataPreprocessor, FillNaPreProcessor
 from data_preprocessor.feature_engineering import BasicFeaturesPreprocessor, DupletsTripletsPreprocessor, MovingAvgPreProcessor, RemoveIrrelevantFeaturesDataPreprocessor, DropTargetNADataPreprocessor
 from data_preprocessor.polynomial_features import PolynomialFeaturesPreProcessor
+from data_preprocessor.stockid_features import StockIdFeaturesPreProcessor
 from data_generator.data_generator import DefaultTrainEvalDataGenerator, ManualKFoldDataGenerator, TimeSeriesKFoldDataGenerator
 
 from model_pipeline.lgb_pipeline import LGBModelPipelineFactory
@@ -32,9 +33,10 @@ model_save_dir = './models/'
 
 processors = [    
     ReduceMemUsageDataPreprocessor(verbose=True),
-    BasicFeaturesPreprocessor(),
+    # BasicFeaturesPreprocessor(),    
     # DupletsTripletsPreprocessor(),
-    # MovingAvgPreProcessor("wap"),    
+    # MovingAvgPreProcessor("wap"),  
+    # StockIdFeaturesPreProcessor(),  
     DropTargetNADataPreprocessor(),    
     RemoveIrrelevantFeaturesDataPreprocessor(['stock_id', 'date_id','time_id', 'row_id']),
     # FillNaPreProcessor(),
