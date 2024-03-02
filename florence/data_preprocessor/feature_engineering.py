@@ -85,7 +85,7 @@ class DropTargetNADataPreprocessor(DataPreprocessor):
         processed_df = df.dropna(subset=[self.target_col_name])
         return processed_df
 
-
+    
 class DTWKMeansPreprocessor(DataPreprocessor):
 
     def __init__(self, n_clusters=3, target_col_name='wap'):
@@ -93,10 +93,22 @@ class DTWKMeansPreprocessor(DataPreprocessor):
         self.target_col_name = target_col_name
         self.model = TimeSeriesKMeans(n_clusters=n_clusters, metric="dtw")
     def apply(self, df):
-        pivoted_df = df.pivot(index='time_id', columns='stock_id', values=self.target_col_name).fillna(0)
+        print("DTWKMeansPreprocessor_start")
+        df.set_index(['date_id', 'time_id', 'stock_id'], inplace=True)
+        df_unstacked = df.unstack(level='stock_id')
+        df_unstacked.columns = ['_'.join(map(str, col)).strip() for col in df_unstacked.columns.values]
+        pivoted_df = df_unstacked.fillna(0)
+        pivoted_df .reset_index(inplace=True)
+        relevant_columns = [col for col in pivoted_df.columns if col.startswith(self.target_col_name)]
+        relevant_columns =relevant_columns
+        pivoted_df = pivoted_df[relevant_columns]
         time_series_data = pivoted_df.to_numpy()
-        time_series_data = time_series_data.reshape((time_series_data.shape[0], time_series_data.shape[1], 1))
         labels = self.model.fit_predict(time_series_data)
-        df['cluster'] = labels[df['time_id']]
-        processed_df = df.dropna(subset=['cluster'])
+        cluster_df = pd.DataFrame(labels, index=df_unstacked.index, columns=['cluster'])
+        df.reset_index(inplace=True)
+        processed_df = pd.merge(df, cluster_df, on=['date_id', 'time_id'], how='left')
+        processed_df = processed_df.dropna(subset=['cluster'])
+        processed_df['cluster'] = processed_df['cluster'].astype(int)
+        print("DTWKMeansPreprocessor_end")
         return processed_df
+
