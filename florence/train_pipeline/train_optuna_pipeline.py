@@ -151,6 +151,7 @@ class DefaultOptunaTrainPipeline():
         def objective(trial):
             # set up the parameters to be optimized
             param = {
+                'device': 'gpu',
                 'objective': 'regression_l1',
                 'random_state': 42,
                 'n_estimators': trial.suggest_int('n_estimators', 100, 5000, step=100),

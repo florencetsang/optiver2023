@@ -5,7 +5,7 @@ from data_preprocessor.data_preprocessor import DataPreprocessor
 from tslearn.metrics import dtw
 from tslearn.clustering import TimeSeriesKMeans
 import time
-
+import matplotlib.pyplot as plt
 class BasicFeaturesPreprocessor(DataPreprocessor):
     def calculate_pressure(self, df):
         return np.where(
@@ -94,11 +94,24 @@ class DropTargetNADataPreprocessor(DataPreprocessor):
 
 class DTWKMeansPreprocessor(DataPreprocessor):
 
-    def __init__(self, n_clusters=3, target_col_name='wap'):
+    def __init__(self, n_clusters=5, target_col_name='wap'):
         self.n_clusters = n_clusters
         self.target_col_name = target_col_name
         self.model = TimeSeriesKMeans(n_clusters=n_clusters, metric="dtw")
-        
+    def fit(self, time_series_data, max_clusters=10):
+        inertias = []
+        for n_clusters in range(1, max_clusters + 1):
+            model = TimeSeriesKMeans(n_clusters=n_clusters, metric="dtw")
+            model.fit(time_series_data)
+            inertias.append(model.inertia_)
+        return inertias
+        # plt.figure(figsize=(8, 4))
+        # plt.plot(range(1, max_clusters + 1), inertias, marker='o')
+        # plt.xlabel('Number of clusters')
+        # plt.ylabel('Inertia')
+        # plt.title('Elbow Method For Optimal k')
+        # plt.show()
+
     def apply(self, df):
         print("DTWKMeansPreprocessor_start")
         df.set_index(['date_id', 'time_id', 'stock_id'], inplace=True)
@@ -116,5 +129,6 @@ class DTWKMeansPreprocessor(DataPreprocessor):
         processed_df = pd.merge(df, cluster_df, on=['date_id', 'time_id'], how='left')
         processed_df = processed_df.dropna(subset=['cluster'])
         processed_df['cluster'] = processed_df['cluster'].astype(int)
+
         print("DTWKMeansPreprocessor_end")
         return processed_df

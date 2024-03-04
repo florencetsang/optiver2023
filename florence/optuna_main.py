@@ -21,11 +21,11 @@ import optuna
 import numpy as np
 
 import sys
-
-model_name = sys.argv[1]
+model_name ="model_2023_03_04"
+# model_name = sys.argv[1]
 # model_name = "best_model_2023_02_19"
 
-print("Model name is", sys.argv[1])
+# print("Model name is", sys.argv[1])
 
 N_fold = 5
 model_save_dir = './models/'
@@ -34,8 +34,9 @@ processors = [
     ReduceMemUsageDataPreprocessor(verbose=True),
     # BasicFeaturesPreprocessor(),
     # DupletsTripletsPreprocessor(),
-    # MovingAvgPreProcessor("wap"),    
     DTWKMeansPreprocessor(),
+    # MovingAvgPreProcessor("wap"),    
+    
     DropTargetNADataPreprocessor(),    
     RemoveIrrelevantFeaturesDataPreprocessor(['stock_id', 'date_id','time_id', 'row_id']),
     # FillNaPreProcessor(),
@@ -54,7 +55,7 @@ processor = CompositeDataPreprocessor(processors)
 test_processors = CompositeDataPreprocessor(test_processors)
 
 # DATA_PATH = '/kaggle/input'
-DATA_PATH = '..'
+DATA_PATH = r'G:\My Drive\Script\Github\Data\optiver-trading-at-the-close'
 df_train, df_test, revealed_targets, sample_submission = load_data_from_csv(DATA_PATH)
 print(df_train.columns)
 
