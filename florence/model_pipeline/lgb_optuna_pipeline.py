@@ -22,8 +22,8 @@ class LGBModelPipeline(ModelPipeline):
             # train_x, valid_x, train_y, valid_y = train_test_split(data, target, test_size=0.25)
             dtrain = lgb.Dataset(train_X, label=train_Y)
             param = {
-                "objective": "regression",
-                "metric": "rmse",
+                "objective": "regression_l1",
+                "metric": "mae",
                 "n_estimators": 1000,
                 "verbosity": -1,
                 "bagging_freq": 1,
