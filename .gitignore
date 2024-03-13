@@ -1,5 +1,6 @@
 __pycache__/
 **/__pycache__/
+**/.ipynb_checkpoints/
 
 .ipynb_checkpoints/
 **/.ipynb_checkpoints/
@@ -10,4 +11,8 @@ optiver-trading-at-the-close/
 .conda/
 
 florence/models
+florence/img
+florence/best_models
 florence/florence_temp
+florence/**/*.pkl
+florence/logs
