@@ -13,3 +13,4 @@ florence/img
 florence/best_models
 florence/florence_temp
 florence/**/*.pkl
+florence/logs
