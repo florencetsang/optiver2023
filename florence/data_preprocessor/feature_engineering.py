@@ -96,3 +96,39 @@ class AddStockDateIdxDataPreprocessor(DataPreprocessor):
         # https://stackoverflow.com/questions/19377969/combine-two-columns-of-text-in-pandas-dataframe
         df["index_col_id"] = df["date_id"] * 1000 + df["stock_id"]
         return df
+
+class FarNearPriceFillNaPreprocessor(DataPreprocessor):
+    def apply(self, df):
+        # TODO: other fillna logic?
+        mask = df["far_price"].isna()
+        df["far_price"] = df["far_price"].mask(mask, 1.0)
+        mask = df["near_price"].isna()
+        df["near_price"] = df["near_price"].mask(mask, 1.0)
+        return df
+
+class MovingAvgFillNaPreprocessor(DataPreprocessor):
+    def __init__(self, feature_name, fill_na_value):
+        super().__init__()
+        self.feature_name = feature_name
+        self.fill_na_value = fill_na_value
+    
+    def apply(self, df):
+        # TODO: other fillna logic?
+        columns = df.columns[df.columns.str.startswith(f"{self.feature_name}_mov_avg")]
+        df[columns] = df[columns].fillna(self.fill_na_value)
+        return df
+
+class RemoveRecordsByStockDateIdPreprocessor(DataPreprocessor):
+    def __init__(self, stock_date_keys):
+        super().__init__()
+        self.stock_date_keys = stock_date_keys
+
+    def apply(self, df):
+        keep_mask = np.ones(df.shape[0], dtype=bool)
+        for stock_date_key in self.stock_date_keys:
+            remove_mask = (df["stock_id"] == stock_date_key["stock_id"]) & (df["date_id"] == stock_date_key["date_id"])
+            keep_mask = keep_mask & (~remove_mask)
+        final_df = df.drop(df[~keep_mask].index)
+        removed_records = df.shape[0] - final_df.shape[0]
+        print(f"RemoveRecordsByStockDateIdPreprocessor - removing {removed_records} records")
+        return final_df
