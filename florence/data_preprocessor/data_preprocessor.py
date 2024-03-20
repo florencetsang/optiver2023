@@ -12,7 +12,7 @@ class CompositeDataPreprocessor(DataPreprocessor):
 
     def apply(self, df):
         processed_df = df
-        print(f"CompositeDataPreprocessor - original df shape: {processed_df.shape}")
+        print(f"{self.__class__.__name__} - original df shape: {processed_df.shape}")
         for processor in self.processors:
             processor_name = processor.__class__.__name__
             print(f"Processing {processor_name}...")
@@ -20,8 +20,28 @@ class CompositeDataPreprocessor(DataPreprocessor):
             processed_df = processor.apply(processed_df)
             toc = time.perf_counter() # End Time
             print(f"{processor_name} took {(toc-tic):.2f}s. New df shape: {processed_df.shape}.")
-        print(f"CompositeDataPreprocessor - final df shape: {processed_df.shape}")
+        print(f"{self.__class__.__name__} - final df shape: {processed_df.shape}")
         return processed_df
+
+class GroupedDataPreprocessor:
+    def apply(self, df, df_grouped):
+        return df, df_grouped
+
+class CompositeGroupedDataPreprocessor(GroupedDataPreprocessor):
+    def __init__(self, processors):
+        self.processors = processors
+
+    def apply(self, df, df_grouped):
+        processed_df = df
+        processed_df_grouped = df_grouped
+        for processor in self.processors:
+            processor_name = processor.__class__.__name__
+            print(f"Processing {processor_name}...")
+            tic = time.perf_counter() # Start Time
+            processed_df, processed_df_grouped = processor.apply(processed_df, processed_df_grouped)
+            toc = time.perf_counter() # End Time
+            print(f"{processor_name} took {(toc-tic):.2f}s.")
+        return processed_df, processed_df_grouped
 
 # TODO: Is it a preprocessor?
 class TimeSeriesDataPreprocessor:
