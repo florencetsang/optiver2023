@@ -24,24 +24,39 @@ class CompositeDataPreprocessor(DataPreprocessor):
         return processed_df
 
 class GroupedDataPreprocessor:
-    def apply(self, df, df_grouped):
-        return df, df_grouped
+    def fit(self, df_grouped_map):
+        return
+
+    def apply(self, df_grouped_map):
+        return df_grouped_map
 
 class CompositeGroupedDataPreprocessor(GroupedDataPreprocessor):
     def __init__(self, processors):
         self.processors = processors
 
-    def apply(self, df, df_grouped):
-        processed_df = df
-        processed_df_grouped = df_grouped
+    def fit(self, df_grouped_map):
+        print(f"{self.__class__.__name__} - fit - start - processors: {len(self.processors)}")
         for processor in self.processors:
             processor_name = processor.__class__.__name__
             print(f"Processing {processor_name}...")
             tic = time.perf_counter() # Start Time
-            processed_df, processed_df_grouped = processor.apply(processed_df, processed_df_grouped)
+            processor.fit(df_grouped_map)
             toc = time.perf_counter() # End Time
             print(f"{processor_name} took {(toc-tic):.2f}s.")
-        return processed_df, processed_df_grouped
+        print(f"{self.__class__.__name__} - fit - end - processors: {len(self.processors)}")
+
+    def apply(self, df_grouped_map):
+        processed_df_grouped_map = df_grouped_map
+        print(f"{self.__class__.__name__} - apply - start - processors: {len(self.processors)}")
+        for processor in self.processors:
+            processor_name = processor.__class__.__name__
+            print(f"Processing {processor_name}...")
+            tic = time.perf_counter() # Start Time
+            processed_df_grouped_map = processor.apply(processed_df_grouped_map)
+            toc = time.perf_counter() # End Time
+            print(f"{processor_name} took {(toc-tic):.2f}s.")
+        print(f"{self.__class__.__name__} - apply - end - processors: {len(self.processors)}")
+        return processed_df_grouped_map
 
 # TODO: Is it a preprocessor?
 class TimeSeriesDataPreprocessor:
