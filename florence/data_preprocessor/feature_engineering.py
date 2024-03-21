@@ -32,7 +32,7 @@ class DupletsTripletsPreprocessor(DataPreprocessor):
         df_ = df.copy()
 
         for c in combinations(prices, 2):
-            df[f"{c[0]}_{c[1]}_imb"] = df.eval(f"({c[0]} - {c[1]})/({c[0]} + {c[1]})")
+            df_[f"{c[0]}_{c[1]}_imb"] = df.eval(f"({c[0]} - {c[1]})/({c[0]} + {c[1]})")
 
         for a, b, c in combinations( ['reference_price', 'ask_price', 'bid_price', 'wap'], 3):
             maxi = df_[[a,b,c]].max(axis=1)

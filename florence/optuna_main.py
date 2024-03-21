@@ -32,13 +32,13 @@ model_save_dir = './models/'
 
 processors = [    
     ReduceMemUsageDataPreprocessor(verbose=True),
-    BasicFeaturesPreprocessor(),
-    # DupletsTripletsPreprocessor(),
-    # MovingAvgPreProcessor("wap"),    
+    # BasicFeaturesPreprocessor(),
+    DupletsTripletsPreprocessor(),
+    MovingAvgPreProcessor("wap"),    
     DropTargetNADataPreprocessor(),    
     RemoveIrrelevantFeaturesDataPreprocessor(['stock_id', 'date_id','time_id', 'row_id']),
-    # FillNaPreProcessor(),
-    # PolynomialFeaturesPreProcessor(),
+    FillNaPreProcessor(),
+    PolynomialFeaturesPreProcessor(),
 ]
 
 test_processors = [
