@@ -30,6 +30,9 @@ class ModelPipeline:
     def get_name(self):
         return "AbstractModelPipeline"
 
+    def get_hyper_params(self, trial):
+        return None
+
 class ModelPipelineFactory:
     def create_model_pipeline(self) -> ModelPipeline:
         return None

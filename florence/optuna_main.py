@@ -6,6 +6,8 @@ from data_preprocessor.stockid_features import StockIdFeaturesPreProcessor
 from data_generator.data_generator import DefaultTrainEvalDataGenerator, ManualKFoldDataGenerator, TimeSeriesKFoldDataGenerator
 
 from model_pipeline.lgb_pipeline import LGBModelPipelineFactory
+from model_pipeline.xgb_pipeline import XGBModelPipelineFactory
+from model_pipeline.cbt_pipeline import CatBoostModelPipelineFactory
 
 from model_post_processor.model_post_processor import CompositeModelPostProcessor, SaveModelPostProcessor
 
@@ -23,10 +25,10 @@ import numpy as np
 
 import sys
 
-model_name = sys.argv[1]
-# model_name = "best_model_2023_02_19"
+# model_name = sys.argv[1]
+model_name = "best_model_2023_03_24"
 
-print("Model name is", sys.argv[1])
+# print("Model name is", sys.argv[1])
 
 N_fold = 5
 model_save_dir = './models/'
@@ -60,7 +62,7 @@ df_train, df_test, revealed_targets, sample_submission = load_data_from_csv(DATA
 print(df_train.columns)
 
 raw_data = df_train
-# df_train = df_train[:100000]
+df_train = df_train[:1000]
 df_train = processor.apply(df_train)
 # df_test = test_processors.apply(df_test)
 print(df_train.shape[0])
@@ -77,6 +79,9 @@ model_post_processor = CompositeModelPostProcessor([
 
 # lgb_pipeline = DefaultTrainPipeline(LGBModelPipelineFactory(), k_fold_data_generator, model_post_processor, [MAECallback()])
 optuna_lgb_pipeline = DefaultOptunaTrainPipeline(LGBModelPipelineFactory(), time_series_k_fold_data_generator, model_post_processor, [MAECallback()])
+# optuna_lgb_pipeline = DefaultOptunaTrainPipeline(XGBModelPipelineFactory(), time_series_k_fold_data_generator, model_post_processor, [MAECallback()])
+# optuna_lgb_pipeline = DefaultOptunaTrainPipeline(CatBoostModelPipelineFactory(), time_series_k_fold_data_generator, model_post_processor, [MAECallback()])
+
 
 # hyper parameter tunning with optuna
 best_param = optuna_lgb_pipeline.train(df_train)
