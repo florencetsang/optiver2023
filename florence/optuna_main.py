@@ -62,7 +62,7 @@ df_train, df_test, revealed_targets, sample_submission = load_data_from_csv(DATA
 print(df_train.columns)
 
 raw_data = df_train
-df_train = df_train[:1000]
+# df_train = df_train[:1000]
 df_train = processor.apply(df_train)
 # df_test = test_processors.apply(df_test)
 print(df_train.shape[0])

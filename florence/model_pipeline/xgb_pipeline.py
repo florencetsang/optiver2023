@@ -20,6 +20,11 @@ class XGBModelPipeline(ModelPipeline):
     def get_name(self):
         return "xgb"
 
+
+    def get_name_with_params(self, params):
+        selected_params_for_model_name = ['booster', 'lambda', 'alpha']
+        return "_".join([f"{param_n}_{params[param_n]}" for param_n in selected_params_for_model_name])
+
     def get_hyper_params(self, trial):
         return {
             "booster": trial.suggest_categorical("booster", ["gbtree", "gblinear", "dart"]),

@@ -1,7 +1,7 @@
 import lightgbm as lgb
-from model_pipeline.model_pipeline import ModelPipeline, ModelPipelineFactory
+from florence.model_pipeline.model_pipeline import ModelPipeline, ModelPipelineFactory
 import optuna
-from utils.scoring_utils import ScoringUtils
+from florence.utils.scoring_utils import ScoringUtils
 import numpy as np
 import sklearn
 
@@ -39,6 +39,11 @@ class LGBModelPipeline(ModelPipeline):
     
     def get_name(self):
         return "lgb"
+
+
+    def get_name_with_params(self, params):
+        selected_params_for_model_name = ['learning_rate', 'max_depth', 'n_estimators']
+        return "_".join([f"{param_n}_{params[param_n]}" for param_n in selected_params_for_model_name])
 
     def get_hyper_params(self, trial):
         return {

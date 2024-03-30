@@ -70,14 +70,14 @@ class DefaultOptunaTrainPipeline():
         feature_importance_img = plt.imread(f"img/feature_importance_{save_name}.jpg")
         plt.imshow(feature_importance_img)
 
-    def plot_shap(self, lgbm_model, df_train, df_eval, save_name):
+    def plot_shap(self, lgbm_model, df_train, df_eval, save_name, shap_data_size):
         # shap
         # Create a SHAP explainer object for the LightGBM model
         explainer = shap.TreeExplainer(lgbm_model)
 
         # Sample 10% of the test data to use for faster computation of SHAP values
         X_train_fold, y_train_fold, X_val_fold, y_val_fold = self.model_pipeline.create_XY(df_train, df_eval)
-        sample = pd.DataFrame(X_val_fold).sample(frac=0.01, random_state=42)
+        sample = pd.DataFrame(X_val_fold).sample(frac=shap_data_size, random_state=42)
 
         # Calculate the SHAP values for the sampled test data using the explainer
         shap_values = explainer.shap_values(sample)
@@ -198,20 +198,20 @@ class DefaultOptunaTrainPipeline():
         lgbm_model = lgb.LGBMRegressor(**params)
         X_train_fold, y_train_fold, X_val_fold, y_val_fold = self.model_pipeline.create_XY(train_dfs, eval_dfs)
         lgbm_model.fit(X_train_fold, y_train_fold)
-        best_model_name = "_".join([f"{param_n}_{param_v}" for param_n, param_v in params.items()[:3]])
+        best_model_name = self.model_pipeline.get_name_with_params(params)
         save_path = f"best_models/{self.model_pipeline.get_name()}_{best_model_name}"
         joblib.dump(lgbm_model, save_path)
         toc = time.perf_counter() # End Time
         print(f"Finished training with params. Took {(toc-tic):.2f}s.")
         return lgbm_model, train_dfs, eval_dfs, save_path
 
-    def load_model_eval(self, df_train, model_name, best_model_name):
+    def load_model_eval(self, df_train, model_name, best_model_name, shap_data_size=0.01):
         train_dfs, eval_dfs, num_train_eval_sets = self.train_eval_data_generator.generate(df_train)
         # pick last training testing pair for feature eval
         last_train_dfs, last_eval_dfs = train_dfs[-1], eval_dfs[-1]
         lgbm_model = joblib.load(best_model_name)
         self.plot_feature_importance(lgbm_model, last_eval_dfs, model_name)
-        self.plot_shap(lgbm_model, last_train_dfs, last_eval_dfs, model_name)
+        self.plot_shap(lgbm_model, last_train_dfs, last_eval_dfs, model_name, shap_data_size)
 
         return lgbm_model, train_dfs, eval_dfs
 

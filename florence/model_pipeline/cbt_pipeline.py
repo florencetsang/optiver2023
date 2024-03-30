@@ -31,6 +31,12 @@ class CatBoostModelPipeline(ModelPipeline):
     def get_name(self):
         return "cbt"
 
+
+    def get_name_with_params(self, params):
+        selected_params_for_model_name = ['learning_rate', 'depth', 'subsample']
+        return "_".join([f"{param_n}_{params[param_n]}" for param_n in selected_params_for_model_name])
+
+
     def get_hyper_params(self, trial):
         return {
             "learning_rate": trial.suggest_float("learning_rate", 1e-3, 0.1, log=True),
