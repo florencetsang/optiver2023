@@ -8,6 +8,7 @@ from data_generator.data_generator import DefaultTrainEvalDataGenerator, ManualK
 from model_pipeline.lgb_pipeline import LGBModelPipelineFactory
 from model_pipeline.xgb_pipeline import XGBModelPipelineFactory
 from model_pipeline.cbt_pipeline import CatBoostModelPipelineFactory
+from model_pipeline.mlp_pipeline import MLPModelPipelineFactory
 
 from model_post_processor.model_post_processor import CompositeModelPostProcessor, SaveModelPostProcessor
 
@@ -42,7 +43,7 @@ processors = [
     # DTWKMeansPreprocessor(),    
     DropTargetNADataPreprocessor(),    
     RemoveIrrelevantFeaturesDataPreprocessor(['stock_id', 'date_id','time_id', 'row_id']),
-    # FillNaPreProcessor(),
+    FillNaPreProcessor(1.0),
     # PolynomialFeaturesPreProcessor(),
 ]
 
@@ -79,36 +80,37 @@ model_post_processor = CompositeModelPostProcessor([
 ])
 
 # lgb_pipeline = DefaultTrainPipeline(LGBModelPipelineFactory(), k_fold_data_generator, model_post_processor, [MAECallback()])
-optuna_lgb_pipeline = DefaultOptunaTrainPipeline(LGBModelPipelineFactory(), time_series_k_fold_data_generator, model_post_processor, [MAECallback()])
-# optuna_lgb_pipeline = DefaultOptunaTrainPipeline(XGBModelPipelineFactory(), time_series_k_fold_data_generator, model_post_processor, [MAECallback()])
-# optuna_lgb_pipeline = DefaultOptunaTrainPipeline(CatBoostModelPipelineFactory(), time_series_k_fold_data_generator, model_post_processor, [MAECallback()])
+# optuna_pipeline = DefaultOptunaTrainPipeline(LGBModelPipelineFactory(), time_series_k_fold_data_generator, model_post_processor, [MAECallback()])
+# optuna_pipeline = DefaultOptunaTrainPipeline(XGBModelPipelineFactory(), time_series_k_fold_data_generator, model_post_processor, [MAECallback()])
+# optuna_pipeline = DefaultOptunaTrainPipeline(CatBoostModelPipelineFactory(), time_series_k_fold_data_generator, model_post_processor, [MAECallback()])
+optuna_pipeline = DefaultOptunaTrainPipeline(MLPModelPipelineFactory(), time_series_k_fold_data_generator, model_post_processor, [MAECallback()])
 
 
 # hyper parameter tunning with optuna
-best_param = optuna_lgb_pipeline.train(df_train)
+best_param = optuna_pipeline.train(df_train)
 
 # train model with param
-# lgb_models, lgb_train_dfs, lgb_eval_dfs = optuna_lgb_pipeline.train_with_param(
+# trained_models, train_dfs, eval_dfs = optuna_pipeline.train_with_param(
 #     df_train,
 #     params={'n_estimators': 2700, 'reg_alpha': 1.666271247059715, 'reg_lambda': 0.0013314248446567097, 'colsample_bytree': 0.6512412430910787, 'subsample': 0.5550654570575708, 'learning_rate': 0.0124880163018859, 'max_depth': 11, 'num_leaves': 354, 'min_child_samples': 71,
 #             'objective': 'regression_l1', 'random_state': 42, 'force_col_wise': True, "verbosity": -1}
 # )
-lgb_models, lgb_train_dfs, lgb_eval_df, best_model_name = optuna_lgb_pipeline.train_with_param(
+trained_models, train_dfs, eval_dfs, best_model_name = optuna_pipeline.train_with_param(
     df_train,
     params=best_param,
     name = model_name
 )
 
 # load and eval model
-lgb_models, lgb_train_dfs, lgb_eval_dfs = optuna_lgb_pipeline.load_model_eval(
+trained_models, train_dfs, eval_dfs = optuna_pipeline.load_model_eval(
     df_train,
     model_name,
     best_model_name
 )
 
 
-lgb_avg_mae = ScoringUtils.calculate_mae([lgb_models], lgb_eval_dfs)
-print(lgb_avg_mae)
+model_avg_mae = ScoringUtils.calculate_mae([trained_models], eval_dfs)
+print(model_avg_mae)
 
 baseline_avg_mae = ScoringUtils.calculate_mae([BaselineEstimator()], [df_train])
 print(baseline_avg_mae)
