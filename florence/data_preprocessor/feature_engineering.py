@@ -2,6 +2,9 @@ import numpy as np
 import pandas as pd
 from itertools import combinations
 from data_preprocessor.data_preprocessor import DataPreprocessor
+from tslearn.metrics import dtw
+from tslearn.clustering import TimeSeriesKMeans
+import time
 
 class BasicFeaturesPreprocessor(DataPreprocessor):
     def calculate_pressure(self, df):
@@ -113,4 +116,31 @@ class DropTargetNADataPreprocessor(DataPreprocessor):
     
     def apply(self, df):
         processed_df = df.dropna(subset=[self.target_col_name])
+        return processed_df
+
+class DTWKMeansPreprocessor(DataPreprocessor):
+
+    def __init__(self, n_clusters=3, target_col_name='wap'):
+        self.n_clusters = n_clusters
+        self.target_col_name = target_col_name
+        self.model = TimeSeriesKMeans(n_clusters=n_clusters, metric="dtw")
+        
+    def apply(self, df):
+        print("DTWKMeansPreprocessor_start")
+        df.set_index(['date_id', 'time_id', 'stock_id'], inplace=True)
+        df_unstacked = df.unstack(level='stock_id')
+        df_unstacked.columns = ['_'.join(map(str, col)).strip() for col in df_unstacked.columns.values]
+        pivoted_df = df_unstacked.fillna(0)
+        pivoted_df .reset_index(inplace=True)
+        relevant_columns = [col for col in pivoted_df.columns if col.startswith(self.target_col_name)]
+        relevant_columns =relevant_columns
+        pivoted_df = pivoted_df[relevant_columns]
+        time_series_data = pivoted_df.to_numpy()
+        labels = self.model.fit_predict(time_series_data)
+        cluster_df = pd.DataFrame(labels, index=df_unstacked.index, columns=['cluster'])
+        df.reset_index(inplace=True)
+        processed_df = pd.merge(df, cluster_df, on=['date_id', 'time_id'], how='left')
+        processed_df = processed_df.dropna(subset=['cluster'])
+        processed_df['cluster'] = processed_df['cluster'].astype(int)
+        print("DTWKMeansPreprocessor_end")
         return processed_df
