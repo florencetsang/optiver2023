@@ -69,6 +69,32 @@ class MovingAvgPreProcessor(DataPreprocessor):
         df = self._calc_mov_avg(df, grouped_df, 12, 6)
         df = self._calc_mov_avg(df, grouped_df, 24, 12)
         return df
+    
+
+#to implement EWMA
+
+class EWMAPreProcessor(DataPreprocessor):
+    def __init__(self, feature_name, span):
+        super().__init__()
+        self.feature_name = feature_name
+        self.span = span
+    
+    def _get_ewma_col_name(self):
+        return f"{self.feature_name}_ewma_{self.span}"  # e.g., wap_ewma_5
+    
+    def _calc_ewma(self, df):
+        ewma_col_name = self._get_ewma_col_name()
+        grouped_df = df.groupby(['stock_id', 'date_id'], as_index=False, sort=False)[self.feature_name]
+        ewma_df = grouped_df.ewm(span=self.span, min_periods=0).mean()
+        df[ewma_col_name] = ewma_df
+        return df
+    
+    def apply(self, df):
+        return self._calc_ewma(df)
+
+
+
+
 
 class RemoveIrrelevantFeaturesDataPreprocessor(DataPreprocessor):
     def __init__(self, non_features):

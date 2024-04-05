@@ -1,6 +1,6 @@
 from load_data import load_data_from_csv
 from data_preprocessor.data_preprocessor import CompositeDataPreprocessor, ReduceMemUsageDataPreprocessor, FillNaPreProcessor
-from data_preprocessor.feature_engineering import BasicFeaturesPreprocessor, DupletsTripletsPreprocessor, MovingAvgPreProcessor, RemoveIrrelevantFeaturesDataPreprocessor, DropTargetNADataPreprocessor
+from data_preprocessor.feature_engineering import BasicFeaturesPreprocessor, DupletsTripletsPreprocessor, MovingAvgPreProcessor, EWMAPreProcessor,RemoveIrrelevantFeaturesDataPreprocessor, DropTargetNADataPreprocessor
 from data_preprocessor.polynomial_features import PolynomialFeaturesPreProcessor
 from data_generator.data_generator import DefaultTrainEvalDataGenerator, ManualKFoldDataGenerator, TimeSeriesKFoldDataGenerator
 
@@ -33,18 +33,18 @@ model_save_dir = './models/'
 processors = [    
     ReduceMemUsageDataPreprocessor(verbose=True),
     # BasicFeaturesPreprocessor(),
-    DupletsTripletsPreprocessor(),
-    MovingAvgPreProcessor("wap"),    
+    # DupletsTripletsPreprocessor(),
+    # MovingAvgPreProcessor("wap"),    
     DropTargetNADataPreprocessor(),    
     RemoveIrrelevantFeaturesDataPreprocessor(['stock_id', 'date_id','time_id', 'row_id']),
-    FillNaPreProcessor(),
-    PolynomialFeaturesPreProcessor(),
+    # FillNaPreProcessor(),
+    # PolynomialFeaturesPreProcessor(),
 ]
 
 test_processors = [
     BasicFeaturesPreprocessor(),
     # DupletsTripletsPreprocessor()
-    MovingAvgPreProcessor("wap"),
+    EWMAPreProcessor(feature_name='wap', span=30),
     # DropTargetNADataPreprocessor(),
     # RemoveIrrelevantFeaturesDataPreprocessor(['date_id','time_id', 'row_id'])
     RemoveIrrelevantFeaturesDataPreprocessor(['stock_id', 'date_id','time_id', 'row_id'])
@@ -63,6 +63,8 @@ df_train = processor.apply(df_train)
 # df_test = test_processors.apply(df_test)
 print(df_train.shape[0])
 print(df_train.columns)
+
+
 
 
 default_data_generator = DefaultTrainEvalDataGenerator()
