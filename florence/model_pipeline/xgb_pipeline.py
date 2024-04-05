@@ -20,6 +20,29 @@ class XGBModelPipeline(ModelPipeline):
     def get_name(self):
         return "xgb"
 
+
+    def get_name_with_params(self, params):
+        selected_params_for_model_name = ['booster', 'lambda', 'alpha']
+        return "_".join([f"{param_n}_{params[param_n]}" for param_n in selected_params_for_model_name])
+
+    def get_hyper_params(self, trial):
+        return {
+            "booster": trial.suggest_categorical("booster", ["gbtree", "gblinear", "dart"]),
+            # L2 regularization weight.
+            "lambda": trial.suggest_float("lambda", 1e-8, 1.0, log=True),
+            # L1 regularization weight.
+            "alpha": trial.suggest_float("alpha", 1e-8, 1.0, log=True),
+            # sampling ratio for training data.
+            "subsample": trial.suggest_float("subsample", 0.2, 1.0),
+            "verbosity": 0,
+            "objective": "binary:logistic",
+            # use exact for small dataset.
+            "tree_method": "exact",
+            # defines booster, gblinear for linear functions.
+            # sampling according to each tree.
+            "colsample_bytree": trial.suggest_float("colsample_bytree", 0.2, 1.0),
+        }
+
 class XGBModelPipelineFactory(ModelPipelineFactory):
     def create_model_pipeline(self) -> ModelPipeline:
         return XGBModelPipeline()
