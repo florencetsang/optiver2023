@@ -1,7 +1,7 @@
 import lightgbm as lgb
-from florence.model_pipeline.model_pipeline import ModelPipeline, ModelPipelineFactory
+from model_pipeline.model_pipeline import ModelPipeline, ModelPipelineFactory
 import optuna
-from florence.utils.scoring_utils import ScoringUtils
+from utils.scoring_utils import ScoringUtils
 import numpy as np
 import sklearn
 
@@ -61,6 +61,9 @@ class LGBModelPipeline(ModelPipeline):
             'random_state': 42,
             'force_col_wise': True,
             "verbosity": -1,
+            'device': 'gpu',
+            'gpu_platform_id': 0,
+            'gpu_device_id ': 0,
         }
 
 class LGBModelPipelineFactory(ModelPipelineFactory):
