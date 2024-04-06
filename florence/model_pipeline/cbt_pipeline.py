@@ -9,7 +9,7 @@ class CatBoostModelPipeline(ModelPipeline):
         if param:
             self.model = cbt.CatBoostRegressor(**param)
         else:
-            self.model = cbt.CatBoostRegressor(objective='MAE', iterations=50)
+            self.model = cbt.CatBoostRegressor(objective='MAE', iterations=50, random_state=42)
     
     def _train(self, train_X, train_Y, eval_X, eval_Y):
         eval_set = self._get_eval_set(eval_X, eval_Y)
@@ -45,6 +45,7 @@ class CatBoostModelPipeline(ModelPipeline):
             "colsample_bylevel": trial.suggest_float("colsample_bylevel", 0.05, 1.0),
             "min_data_in_leaf": trial.suggest_int("min_data_in_leaf", 1, 100),
             "iterations": 100,
+            'random_state': 42,
         }
 
 
