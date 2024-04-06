@@ -1,5 +1,6 @@
 from utils.ml_utils import MLUtils
 
+
 class ModelPipeline:
     model = None
 
@@ -29,6 +30,12 @@ class ModelPipeline:
 
     def get_name(self):
         return "AbstractModelPipeline"
+
+    def get_hyper_params(self, trial):
+        return None
+
+    def get_name_with_params(self, params):
+        return None
 
 class ModelPipelineFactory:
     def create_model_pipeline(self) -> ModelPipeline:
