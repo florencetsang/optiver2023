@@ -1,6 +1,7 @@
 import catboost as cbt
 from model_pipeline.model_pipeline import ModelPipeline, ModelPipelineFactory
 
+
 class CatBoostModelPipeline(ModelPipeline):
     def __init__(self):
         super().__init__()
