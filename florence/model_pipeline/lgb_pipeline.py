@@ -1,7 +1,7 @@
 import lightgbm as lgb
-from florence.model_pipeline.model_pipeline import ModelPipeline, ModelPipelineFactory
+from model_pipeline.model_pipeline import ModelPipeline, ModelPipelineFactory
 import optuna
-from florence.utils.scoring_utils import ScoringUtils
+from utils.scoring_utils import ScoringUtils
 import numpy as np
 import sklearn
 
