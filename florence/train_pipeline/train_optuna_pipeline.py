@@ -1,6 +1,6 @@
-from florence.data_generator.data_generator import TrainEvalDataGenerator
-from florence.model_pipeline.model_pipeline import ModelPipelineFactory
-from florence.model_post_processor.model_post_processor import ModelPostProcessor
+from data_generator.data_generator import TrainEvalDataGenerator
+from model_pipeline.model_pipeline import ModelPipelineFactory
+from model_post_processor.model_post_processor import ModelPostProcessor
 
 import lightgbm as lgb
 from sklearn.metrics import mean_squared_error, mean_absolute_error, r2_score
