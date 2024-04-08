@@ -26,10 +26,9 @@ import numpy as np
 
 import sys
 
-# model_name = sys.argv[1]
-model_name = "best_model_2023_03_24"
+model_name = sys.argv[1]
 
-# print("Model name is", sys.argv[1])
+print("Model name is", sys.argv[1])
 
 N_fold = 5
 model_save_dir = './models/'
@@ -64,7 +63,6 @@ df_train, df_test, revealed_targets, sample_submission = load_data_from_csv(DATA
 print(df_train.columns)
 
 raw_data = df_train
-# df_train = df_train[:1000]
 df_train = processor.apply(df_train)
 # df_test = test_processors.apply(df_test)
 print(df_train.shape[0])

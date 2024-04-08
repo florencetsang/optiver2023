@@ -1,5 +1,6 @@
 import lightgbm as lgb
 from model_pipeline.model_pipeline import ModelPipeline, ModelPipelineFactory
+
 class LGBModelPipeline(ModelPipeline):
     def __init__(self):
         super().__init__()
