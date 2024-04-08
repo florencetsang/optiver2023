@@ -1,9 +1,5 @@
 import lightgbm as lgb
 from model_pipeline.model_pipeline import ModelPipeline, ModelPipelineFactory
-import optuna
-from utils.scoring_utils import ScoringUtils
-import numpy as np
-import sklearn
 
 class LGBModelPipeline(ModelPipeline):
     def __init__(self):
