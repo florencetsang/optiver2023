@@ -27,16 +27,20 @@ class ManualKFoldDataGenerator(TrainEvalDataGenerator):
 
 
 class TimeSeriesKFoldDataGenerator(TrainEvalDataGenerator):
-    def __init__(self, n_fold=5):
+    def __init__(self, n_fold=5, test_set_ratio=None):
         super().__init__()
         self.n_fold = n_fold
-        self.tscv = TimeSeriesSplit(n_splits=self.n_fold, gap=0)
+        self.test_set_ratio = test_set_ratio
 
-    def generate(self, df_train):
+    def generate(self, data):
         train_dfs, eval_dfs = [], []
-        for i, (train_index, test_index) in enumerate(self.tscv.split(df_train)):
-            fold_df_train = df_train.iloc[train_index]
-            fold_df_eval = df_train.iloc[test_index]
+        if self.test_set_ratio:
+            tscv = TimeSeriesSplit(n_splits=self.n_fold, test_size=int(len(data) * self.test_set_ratio))
+        else:
+            tscv = TimeSeriesSplit(n_splits=self.n_fold)
+        for i, (train_index, test_index) in enumerate(tscv.split(data)):
+            fold_df_train = data.iloc[train_index]
+            fold_df_eval = data.iloc[test_index]
             train_dfs.append(fold_df_train)
             eval_dfs.append(fold_df_eval)
         return train_dfs, eval_dfs, self.n_fold
