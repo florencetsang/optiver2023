@@ -46,7 +46,9 @@ class CatBoostModelPipeline(ModelPipeline):
             "colsample_bylevel": trial.suggest_float("colsample_bylevel", 0.05, 1.0),
             "min_data_in_leaf": trial.suggest_int("min_data_in_leaf", 1, 100),
             "iterations": 100,
-            'random_state': 42,
+            "random_state": 42,
+            "task_type": "GPU"
+
         }
 
 

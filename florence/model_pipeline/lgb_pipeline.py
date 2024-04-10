@@ -1,7 +1,6 @@
 import lightgbm as lgb
 from model_pipeline.model_pipeline import ModelPipeline, ModelPipelineFactory
 
-
 class LGBModelPipeline(ModelPipeline):
     def __init__(self):
         super().__init__()
@@ -58,6 +57,9 @@ class LGBModelPipeline(ModelPipeline):
             'random_state': 42,
             'force_col_wise': True,
             "verbosity": -1,
+            'device': 'gpu',
+            'gpu_platform_id': 0,
+            'gpu_device_id ': 0,
         }
 
 class LGBModelPipelineFactory(ModelPipelineFactory):
