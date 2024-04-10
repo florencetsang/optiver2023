@@ -41,7 +41,7 @@ processors = [
     # MovingAvgPreProcessor("wap"),   
     # StockIdFeaturesPreProcessor(),   
     # DTWKMeansPreprocessor(),
-    DfsPreProcessor(),
+    # DfsPreProcessor(),
     DropTargetNADataPreprocessor(),    
     RemoveIrrelevantFeaturesDataPreprocessor(['stock_id', 'date_id','time_id', 'row_id']),
     FillNaPreProcessor(1.0),
