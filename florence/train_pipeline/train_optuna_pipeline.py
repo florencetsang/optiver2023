@@ -20,13 +20,15 @@ class DefaultOptunaTrainPipeline():
             model_pipeline_factory: ModelPipelineFactory,
             train_eval_data_generator: TrainEvalDataGenerator,
             model_post_processor: ModelPostProcessor,
-            callbacks
+            callbacks,
+            num_trials=10,
     ):
         self.model_pipeline_factory = model_pipeline_factory
         self.model_pipeline = self.model_pipeline_factory.create_model_pipeline()
         self.train_eval_data_generator = train_eval_data_generator
         self.model_post_processor = model_post_processor
         self.callbacks = callbacks
+        self.num_trials = num_trials
 
     def plot_feature_importance(self, lgbm_model, df_train, save_name):
         # feature importance
@@ -155,7 +157,7 @@ class DefaultOptunaTrainPipeline():
             return mean_score
 
         study = optuna.create_study(direction="minimize")
-        study.optimize(objective, n_trials=10)
+        study.optimize(objective, n_trials=self.num_trials)
 
         print("Number of finished trials: {}".format(len(study.trials)))
 

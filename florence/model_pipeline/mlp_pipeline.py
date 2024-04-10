@@ -15,8 +15,10 @@ from keras import losses
 
 class MLPModelPipeline(ModelPipeline):
 
-    def __init__(self):
+    def __init__(self, model_id):
         super().__init__()
+        self.model_id = model_id
+        self.count = 0
 
     def init_model(self, param: dict = None):
 
@@ -48,16 +50,16 @@ class MLPModelPipeline(ModelPipeline):
 
 
     def train(self, train_X, train_Y, eval_X, eval_Y, eval_res):
-        print(train_X[:10])
-        print(train_Y[:10])
-        print(eval_X[:10])
-        print(eval_Y[:10])
+        # print(train_X[:10])
+        # print(train_Y[:10])
+        # print(eval_X[:10])
+        # print(eval_Y[:10])
         try:
             history = self.model.fit(
                 train_X,
                 train_Y,
                 validation_data=(eval_X, eval_Y),
-                epochs=1,
+                epochs=10,
             )
         except Exception as ex:
             print("fit exception")
@@ -81,7 +83,8 @@ class MLPModelPipeline(ModelPipeline):
         # plt.show()
 
         # Show the plot
-        plt.savefig(f'img/mlp_loss_{save_name}.jpg')
+        plt.savefig(f'img/mlp_{self.model_id}_loss_{self.count}.jpg')
+        self.count+=1
         # shap_img = plt.imread(f"img/shap_{save_name}.jpg")
         # plt.imshow(shap_img)
 
@@ -92,8 +95,8 @@ class MLPModelPipeline(ModelPipeline):
 
 
     # def get_name_with_params(self, params):
-    #     selected_params_for_model_name = ['learning_rate', 'max_depth', 'n_estimators']
-    #     return "_".join([f"{param_n}_{params[param_n]}" for param_n in selected_params_for_model_name])
+    #     selected_params_for_model_id = ['learning_rate', 'max_depth', 'n_estimators']
+    #     return "_".join([f"{param_n}_{params[param_n]}" for param_n in selected_params_for_model_id])
 
     # def get_hyper_params(self, trial):
     #     return {
@@ -115,5 +118,9 @@ class MLPModelPipeline(ModelPipeline):
     #     }
 
 class MLPModelPipelineFactory(ModelPipelineFactory):
+    def __init__(self, model_id):
+        super().__init__()
+        self.model_id = model_id
+
     def create_model_pipeline(self) -> ModelPipeline:
-        return MLPModelPipeline()
+        return MLPModelPipeline(self.model_id)

@@ -28,7 +28,7 @@ import sys
 
 model_name = sys.argv[1]
 
-print("Model name is", sys.argv[1])
+print("Model name is", model_name)
 
 N_fold = 5
 model_save_dir = './models/'
@@ -81,7 +81,7 @@ model_post_processor = CompositeModelPostProcessor([
 # optuna_pipeline = DefaultOptunaTrainPipeline(LGBModelPipelineFactory(), time_series_k_fold_data_generator, model_post_processor, [MAECallback()])
 # optuna_pipeline = DefaultOptunaTrainPipeline(XGBModelPipelineFactory(), time_series_k_fold_data_generator, model_post_processor, [MAECallback()])
 # optuna_pipeline = DefaultOptunaTrainPipeline(CatBoostModelPipelineFactory(), time_series_k_fold_data_generator, model_post_processor, [MAECallback()])
-optuna_pipeline = DefaultOptunaTrainPipeline(MLPModelPipelineFactory(), time_series_k_fold_data_generator, model_post_processor, [MAECallback()])
+optuna_pipeline = DefaultOptunaTrainPipeline(MLPModelPipelineFactory(model_name), time_series_k_fold_data_generator, model_post_processor, [MAECallback()], 1)
 
 
 # hyper parameter tunning with optuna
