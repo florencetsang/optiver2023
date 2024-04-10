@@ -1,12 +1,12 @@
 # optiver2023
 
-## Download data and compeition environment files
+## Download data and competition environment files
 
 To use this repository,
 
 Download the folder 'optiver-trading-at-the-close' from https://www.kaggle.com/competitions/optiver-trading-at-the-close/data, and add it to the root of the repository.
 
-Its structure look like
+Its structure looks like
 ```
 .
 ├── optiver-trading-at-the-close/
