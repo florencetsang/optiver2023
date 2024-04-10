@@ -23,6 +23,7 @@ class DefaultOptunaTrainPipeline():
             callbacks
     ):
         self.model_pipeline_factory = model_pipeline_factory
+        self.model_pipeline = self.model_pipeline_factory.create_model_pipeline()
         self.train_eval_data_generator = train_eval_data_generator
         self.model_post_processor = model_post_processor
         self.callbacks = callbacks
@@ -69,15 +70,14 @@ class DefaultOptunaTrainPipeline():
         feature_importance_img = plt.imread(f"img/feature_importance_{save_name}.jpg")
         plt.imshow(feature_importance_img)
 
-    def plot_shap(self, lgbm_model, df_train, df_eval, save_name):
+    def plot_shap(self, lgbm_model, df_train, df_eval, save_name, shap_data_size):
         # shap
         # Create a SHAP explainer object for the LightGBM model
         explainer = shap.TreeExplainer(lgbm_model)
 
         # Sample 10% of the test data to use for faster computation of SHAP values
-        model_pipeline = self.model_pipeline_factory.create_model_pipeline()
-        X_train_fold, y_train_fold, X_val_fold, y_val_fold = model_pipeline.create_XY(df_train, df_eval)
-        sample = pd.DataFrame(X_val_fold).sample(frac=0.0001, random_state=42)
+        X_train_fold, y_train_fold, X_val_fold, y_val_fold = self.model_pipeline.create_XY(df_train, df_eval)
+        sample = pd.DataFrame(X_val_fold).sample(frac=shap_data_size, random_state=42)
 
         # Calculate the SHAP values for the sampled test data using the explainer
         shap_values = explainer.shap_values(sample)
@@ -123,49 +123,27 @@ class DefaultOptunaTrainPipeline():
             mse_list = []
             for fold_index in range(len(train_dfs)):
                 # Split the data into training and validation sets
-                model_pipeline = self.model_pipeline_factory.create_model_pipeline()
-                X_train_fold, y_train_fold, X_val_fold, y_val_fold = model_pipeline.create_XY(train_dfs[fold_index], eval_dfs[fold_index])
+                X_train_fold, y_train_fold, X_val_fold, y_val_fold = self.model_pipeline.create_XY(train_dfs[fold_index], eval_dfs[fold_index])
 
                 # create the LightGBM regressor with the optimized parameters
-                model = lgb.LGBMRegressor(**param)
+                self.model_pipeline.init_model(param=param)
                 # Train the model on the training set
-                if early_stopping_flag:
-                    eval_res = {}
-                    # Use early stopping if enabled
-                    model.fit(X_train_fold, y_train_fold, eval_set=[(X_val_fold, y_val_fold)], eval_metric='l1',
-                              callbacks=[
-                                  lgb.early_stopping(stopping_rounds=100),
-                                  lgb.record_evaluation(eval_res)
-                              ])
-                else:
-                    model.fit(X_train_fold, y_train_fold)
+                eval_res = {}
+                # Use early stopping if enabled
+                self.model_pipeline.train(X_train_fold, y_train_fold, X_val_fold, y_val_fold, eval_res)
+
 
                 # Make predictions on the validation set and calculate the MSE score
-                y_pred = model.predict(X_val_fold)
+                y_pred = self.model_pipeline.model.predict(X_val_fold)
                 mse = mean_absolute_error(y_val_fold, y_pred)
                 mse_list.append(mse)
 
             # Return the trained model and the average MSE score
-            return model, np.mean(mse_list)
+            return self.model_pipeline.model, np.mean(mse_list)
 
         def objective(trial):
             # set up the parameters to be optimized
-            param = {
-                'objective': 'regression_l1',
-                'random_state': 42,
-                'n_estimators': trial.suggest_int('n_estimators', 100, 5000, step=100),
-                'reg_alpha': trial.suggest_float('reg_alpha', 1e-4, 10.0, log=True),
-                'reg_lambda': trial.suggest_float('reg_lambda', 1e-4, 10.0, log=True),
-                'colsample_bytree': trial.suggest_float('colsample_bytree', 0.3, 1.0),
-                'subsample': trial.suggest_float('subsample', 0.5, 1.0),
-                'learning_rate': trial.suggest_float('learning_rate', 0.005, 0.2, log=True),
-                'max_depth': trial.suggest_int('max_depth', 4, 12),
-                'num_leaves': trial.suggest_int('num_leaves', 31, 512),
-                'min_child_samples': trial.suggest_int('min_child_samples', 1, 100),
-                # 'cat_smooth': trial.suggest_int('cat_smooth', 1, 100),
-                'force_col_wise': True,
-                "verbosity": -1,
-            }
+            param = self.model_pipeline.get_hyper_params(trial)
 
             # perform cross-validation using the optimized LightGBM regressor
             model, mean_score = cross_validation_fcn(train_dfs, eval_dfs, param, early_stopping_flag=True)
@@ -218,22 +196,22 @@ class DefaultOptunaTrainPipeline():
 
         # Fit the model to the training data
         lgbm_model = lgb.LGBMRegressor(**params)
-        model_pipeline = self.model_pipeline_factory.create_model_pipeline()
-        X_train_fold, y_train_fold, X_val_fold, y_val_fold = model_pipeline.create_XY(train_dfs, eval_dfs)
+        X_train_fold, y_train_fold, X_val_fold, y_val_fold = self.model_pipeline.create_XY(train_dfs, eval_dfs)
         lgbm_model.fit(X_train_fold, y_train_fold)
-        best_model_name = f"best_models/best_model_learning_rate_{params['learning_rate']}_n_estimators_{params['n_estimators']}_{name}"
-        joblib.dump(lgbm_model, best_model_name)
+        best_model_name = self.model_pipeline.get_name_with_params(params)
+        save_path = f"best_models/{self.model_pipeline.get_name()}_{best_model_name}"
+        joblib.dump(lgbm_model, save_path)
         toc = time.perf_counter() # End Time
         print(f"Finished training with params. Took {(toc-tic):.2f}s.")
-        return lgbm_model, train_dfs, eval_dfs, best_model_name
+        return lgbm_model, train_dfs, eval_dfs, save_path
 
-    def load_model_eval(self, df_train, model_name, best_model_name):
+    def load_model_eval(self, df_train, model_name, best_model_name, shap_data_size=0.01):
         train_dfs, eval_dfs, num_train_eval_sets = self.train_eval_data_generator.generate(df_train)
         # pick last training testing pair for feature eval
         last_train_dfs, last_eval_dfs = train_dfs[-1], eval_dfs[-1]
         lgbm_model = joblib.load(best_model_name)
         self.plot_feature_importance(lgbm_model, last_eval_dfs, model_name)
-        self.plot_shap(lgbm_model, last_train_dfs, last_eval_dfs, model_name)
+        self.plot_shap(lgbm_model, last_train_dfs, last_eval_dfs, model_name, shap_data_size)
 
         return lgbm_model, train_dfs, eval_dfs
 
