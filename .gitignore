@@ -17,3 +17,5 @@ florence/florence_temp
 florence/**/*.pkl
 florence/logs
 florence/transformer_encoder_checkpoints
+
+.virtual_documents/
