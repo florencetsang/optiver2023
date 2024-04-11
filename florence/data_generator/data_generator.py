@@ -39,8 +39,8 @@ class TimeSeriesKFoldDataGenerator(TrainEvalDataGenerator):
         else:
             tscv = TimeSeriesSplit(n_splits=self.n_fold)
         for i, (train_index, test_index) in enumerate(tscv.split(data)):
-            fold_df_train = data.iloc[train_index]
-            fold_df_eval = data.iloc[test_index]
+            fold_df_train = data.iloc[train_index].copy(deep=True)
+            fold_df_eval = data.iloc[test_index].copy(deep=True)
             train_dfs.append(fold_df_train)
             eval_dfs.append(fold_df_eval)
         return train_dfs, eval_dfs, self.n_fold

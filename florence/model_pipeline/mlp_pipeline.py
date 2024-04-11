@@ -1,6 +1,7 @@
 import traceback
 
 from sklearn.neural_network import MLPRegressor
+from sklearn.metrics import mean_absolute_error
 from model_pipeline.model_pipeline import ModelPipeline, ModelPipelineFactory
 import matplotlib.pyplot as plt
 
@@ -14,15 +15,12 @@ from keras import Sequential
 from keras import losses
 
 class MLPModelPipeline(ModelPipeline):
-
     def __init__(self, model_id, num_features=12):
         super().__init__()
         self.model_id = model_id
-        self.count = 0
         self.num_features = num_features
 
-    def init_model(self, param: dict = None):
-
+    def init_model(self, param: dict = None, fold=9999):
         self.param = param
 
         # self.model = models.Sequential()
@@ -33,14 +31,10 @@ class MLPModelPipeline(ModelPipeline):
         self.model = Sequential(
         [
             layers.Input(shape=(self.num_features,)),
-            layers.Dense(128, activation='sigmoid'),
-            layers.Dense(256, activation='sigmoid'),
-            layers.Dense(128, activation='sigmoid'),
+            layers.Dense(128, activation='relu'),
+            layers.Dense(64, activation='relu'),
+            layers.Dense(32, activation='relu'),
             layers.Dense(1),
-            # layers.Conv2D(128, kernel_size=(3, 3), activation="relu"),
-            # layers.GlobalAveragePooling2D(),
-            # layers.Dropout(0.5),
-            # layers.Dense(num_classes, activation="softmax"),
             ]   
         )
         print(self.model.summary())
@@ -49,53 +43,39 @@ class MLPModelPipeline(ModelPipeline):
             loss=losses.MeanAbsoluteError(),
             metrics=['mae']
         )
-        # self.model = model
-
+        self.fold = fold
 
     def train(self, train_X, train_Y, eval_X, eval_Y, eval_res):
-        # print(train_X[:10])
-        # print(train_Y[:10])
-        # print(eval_X[:10])
-        # print(eval_Y[:10])
         try:
             history = self.model.fit(
                 train_X,
                 train_Y,
                 validation_data=(eval_X, eval_Y),
-                epochs=10,
+                epochs=self.param["epochs"],
+                batch_size=self.param["batch_size"],
             )
         except Exception as ex:
             print("fit exception")
             traceback.print_exc()
             raise ex
-        # acc = history.history['acc']
-        # val_acc = history.history['val_acc']
         loss = history.history['loss']
         val_loss = history.history['val_loss']
         epochs = range(1, len(loss) + 1)
-        # self.history_list.add(history)
-        # plt.plot(epochs, acc, 'bo', label='Training acc')
-        # plt.plot(epochs, val_acc, 'b', label='Validation acc')
-        # plt.title('Training and validation accuracy')
-        # plt.legend()        
         plt.figure()
         plt.plot(epochs, loss, 'bo', label='Training loss')
         plt.plot(epochs, val_loss, 'b', label='Validation loss')
         plt.title('Training and validation loss')
         plt.legend()
-        # plt.show()
-
-        # Show the plot
-        plt.savefig(f'img/mlp_{self.model_id}_loss_{self.count}.jpg')
-        self.count+=1
-        # shap_img = plt.imread(f"img/shap_{save_name}.jpg")
-        # plt.imshow(shap_img)
-
-
+        plt.show()
+        plt.savefig(f'img/mlp_{self.model_id}_loss_{self.fold}.jpg')
+    
+    def eval_once(self, x, y):
+        pred = self.model.predict(x, batch_size=256)
+        mae = mean_absolute_error(y, pred)
+        return mae
 
     def get_name(self):
         return "mlp"
-
 
     # def get_name_with_params(self, params):
     #     selected_params_for_model_id = ['learning_rate', 'max_depth', 'n_estimators']
