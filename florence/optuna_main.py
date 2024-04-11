@@ -50,7 +50,7 @@ processors = [
 test_processors = [
     BasicFeaturesPreprocessor(),
     # DupletsTripletsPreprocessor()
-    EWMAPreProcessor(feature_name='wap', span=30),
+    EWMAPreProcessor(feature_name='wap', span=20),
     # DropTargetNADataPreprocessor(),
     # RemoveIrrelevantFeaturesDataPreprocessor(['date_id','time_id', 'row_id'])
     RemoveIrrelevantFeaturesDataPreprocessor(['stock_id', 'date_id','time_id', 'row_id'])
