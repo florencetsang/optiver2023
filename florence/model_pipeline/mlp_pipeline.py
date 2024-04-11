@@ -15,10 +15,11 @@ from keras import losses
 
 class MLPModelPipeline(ModelPipeline):
 
-    def __init__(self, model_id):
+    def __init__(self, model_id, num_features=12):
         super().__init__()
         self.model_id = model_id
         self.count = 0
+        self.num_features = num_features
 
     def init_model(self, param: dict = None):
 
@@ -29,7 +30,7 @@ class MLPModelPipeline(ModelPipeline):
         # self.model.add(layers.Dense(1, activation='softmax'))
         self.model = Sequential(
         [
-            layers.Input(shape=(12,)),
+            layers.Input(shape=(self.num_features,)),
             layers.Dense(128, activation='sigmoid'),
             layers.Dense(256, activation='sigmoid'),
             layers.Dense(128, activation='sigmoid'),
@@ -118,9 +119,10 @@ class MLPModelPipeline(ModelPipeline):
     #     }
 
 class MLPModelPipelineFactory(ModelPipelineFactory):
-    def __init__(self, model_id):
+    def __init__(self, model_id, num_features):
         super().__init__()
         self.model_id = model_id
+        self.num_features = num_features
 
     def create_model_pipeline(self) -> ModelPipeline:
-        return MLPModelPipeline(self.model_id)
+        return MLPModelPipeline(self.model_id, self.num_features)
