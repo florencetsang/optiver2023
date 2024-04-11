@@ -23,6 +23,8 @@ class MLPModelPipeline(ModelPipeline):
 
     def init_model(self, param: dict = None):
 
+        self.param = param
+
         # self.model = models.Sequential()
         # self.model.add(layers.Dense(128, activation='sigmoid', input_shape=(13)))
         # self.model.add(layers.Dense(256, activation='sigmoid'))
@@ -43,7 +45,7 @@ class MLPModelPipeline(ModelPipeline):
         )
         print(self.model.summary())
         self.model.compile(
-            optimizer=optimizers.RMSprop(learning_rate=0.1),
+            optimizer=optimizers.RMSprop(learning_rate=self.param["learning_rate"]),
             loss=losses.MeanAbsoluteError(),
             metrics=['mae']
         )
