@@ -57,7 +57,7 @@ class MovingAvgPreProcessor(DataPreprocessor):
 
     def _calc_mov_avg(self, orig_df, grouped_df, window, min_periods):
         mov_avg_col_name = self._get_mov_avg_col_name(window, min_periods)
-        mov_avg_df = grouped_df[self.feature_name].rolling(window=window, min_periods=min_periods).mean()
+        mov_avg_df = grouped_df[self.feature_name].rolling(window=window, min_periods=min_periods).mean().astype(np.float32)
         mov_avg_df = mov_avg_df.sort_index()
         orig_df[mov_avg_col_name] = mov_avg_df[self.feature_name]
         return orig_df
@@ -92,6 +92,49 @@ class DropTargetNADataPreprocessor(DataPreprocessor):
         processed_df = df.dropna(subset=[self.target_col_name])
         return processed_df
 
+class AddStockDateIdxDataPreprocessor(DataPreprocessor):
+    def apply(self, df):
+        # index_col_id: int
+        # TODO: assumed # of stocks < 1000 now
+        # https://stackoverflow.com/questions/19377969/combine-two-columns-of-text-in-pandas-dataframe
+        df["index_col_id"] = df["date_id"] * 1000 + df["stock_id"]
+        return df
+
+class FarNearPriceFillNaPreprocessor(DataPreprocessor):
+    def apply(self, df):
+        # TODO: other fillna logic?
+        mask = df["far_price"].isna()
+        df["far_price"] = df["far_price"].mask(mask, 1.0)
+        mask = df["near_price"].isna()
+        df["near_price"] = df["near_price"].mask(mask, 1.0)
+        return df
+
+class MovingAvgFillNaPreprocessor(DataPreprocessor):
+    def __init__(self, feature_name, fill_na_value):
+        super().__init__()
+        self.feature_name = feature_name
+        self.fill_na_value = fill_na_value
+    
+    def apply(self, df):
+        # TODO: other fillna logic?
+        columns = df.columns[df.columns.str.startswith(f"{self.feature_name}_mov_avg")]
+        df[columns] = df[columns].fillna(self.fill_na_value)
+        return df
+
+class RemoveRecordsByStockDateIdPreprocessor(DataPreprocessor):
+    def __init__(self, stock_date_keys):
+        super().__init__()
+        self.stock_date_keys = stock_date_keys
+
+    def apply(self, df):
+        keep_mask = np.ones(df.shape[0], dtype=bool)
+        for stock_date_key in self.stock_date_keys:
+            remove_mask = (df["stock_id"] == stock_date_key["stock_id"]) & (df["date_id"] == stock_date_key["date_id"])
+            keep_mask = keep_mask & (~remove_mask)
+        final_df = df.drop(df[~keep_mask].index)
+        removed_records = df.shape[0] - final_df.shape[0]
+        print(f"RemoveRecordsByStockDateIdPreprocessor - removing {removed_records} records")
+        return final_df
 class DTWKMeansPreprocessor(DataPreprocessor):
 
     def __init__(self, n_clusters=3, target_col_name='wap'):
