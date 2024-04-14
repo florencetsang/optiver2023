@@ -30,14 +30,19 @@ class MLPModelPipeline(ModelPipeline):
         # self.model.add(layers.Dense(1, activation='softmax'))
         self.model = Sequential(
         [
-            layers.Input(shape=(self.num_features,)),
-            layers.Dense(128),
-            layers.LeakyReLU(),
-            layers.Dense(64),
-            layers.LeakyReLU(),
-            layers.Dense(32),
-            layers.LeakyReLU(),
-            layers.Dense(1),
+            # relu
+            layers.Dense(128, activation='relu'),
+            layers.Dense(64, activation='relu'),
+            layers.Dense(32, activation='relu'),
+            # leaky relu
+            # layers.Input(shape=(self.num_features,)),
+            # layers.Dense(128),
+            # layers.LeakyReLU(),
+            # layers.Dense(64),
+            # layers.LeakyReLU(),
+            # layers.Dense(32),
+            # layers.LeakyReLU(),
+            # layers.Dense(1),
             ]   
         )
         print(self.model.summary())
