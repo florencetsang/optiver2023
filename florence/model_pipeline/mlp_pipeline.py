@@ -34,6 +34,7 @@ class MLPModelPipeline(ModelPipeline):
             layers.Dense(128, activation='relu'),
             layers.Dense(64, activation='relu'),
             layers.Dense(32, activation='relu'),
+            layers.Dense(1),
             # leaky relu
             # layers.Input(shape=(self.num_features,)),
             # layers.Dense(128),
