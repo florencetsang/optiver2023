@@ -53,3 +53,35 @@ plt.xlabel('Stocks')
 plt.ylabel('Euclidean distances')
 plt.axhline(y=1500, color='r', linestyle='--') # This line represents the cut-off for the clusters. Adjust the value as needed.
 plt.show()
+
+
+
+    
+class StockClustering:
+    def __init__(self, data):
+        self.data = data
+        self.correlation_matrix = None
+        self.stock_clusters = None
+    
+    def calculate_returns(self):
+        self.data['return'] = self.data.groupby(['stock_id', 'date_id'])['wap'].pct_change()
+        self.data = self.data.dropna(subset=['return', 'seconds_in_bucket'])
+    
+    def calculate_correlation_matrix(self):
+        pivot_returns = self.data.pivot_table(index=['date_id', 'seconds_in_bucket'], 
+                                              columns='stock_id', 
+                                              values='return')
+        
+        pivot_returns = pivot_returns.apply(lambda row: row.fillna(row.mean()), axis=1)
+        self.correlation_matrix = pivot_returns.corr()
+    
+    def perform_clustering(self, num_clusters):
+        Z = linkage(self.correlation_matrix, 'ward')
+        clusters = fcluster(Z, num_clusters, criterion='maxclust')
+        self.stock_clusters = pd.DataFrame({'stock_id': self.correlation_matrix.index, 'cluster': clusters})
+    
+    def get_correlation_matrix(self):
+        return self.correlation_matrix
+    
+    def get_stock_clusters(self):
+        return self.stock_clusters

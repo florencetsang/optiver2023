@@ -57,12 +57,28 @@ DATA_PATH = '..'
 df_train, df_test, revealed_targets, sample_submission = load_data_from_csv(DATA_PATH)
 print(df_train.columns)
 
+#to impose stocks PCA
+from stocks_pca import StockClustering
+clustering = StockClustering(df_train)
+clustering.calculate_returns()
+clustering.calculate_correlation_matrix()
+clustering.perform_clustering(num_clusters=10)
+
+stock_clusters = clustering.get_stock_clusters()
+
+df_train= df_train.merge(stock_clusters, how='left', on='stock_id')
+
 raw_data = df_train
 # df_train = df_train[:100000]
 df_train = processor.apply(df_train)
 # df_test = test_processors.apply(df_test)
 print(df_train.shape[0])
 print(df_train.columns)
+
+
+
+
+
 
 
 default_data_generator = DefaultTrainEvalDataGenerator()
