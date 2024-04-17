@@ -1,10 +1,14 @@
 from load_data import load_data_from_csv
 from data_preprocessor.data_preprocessor import CompositeDataPreprocessor, ReduceMemUsageDataPreprocessor, FillNaPreProcessor
-from data_preprocessor.feature_engineering import BasicFeaturesPreprocessor, DupletsTripletsPreprocessor, MovingAvgPreProcessor, RemoveIrrelevantFeaturesDataPreprocessor, DropTargetNADataPreprocessor
+from data_preprocessor.feature_engineering import BasicFeaturesPreprocessor, DupletsTripletsPreprocessor, MovingAvgPreProcessor, EWMAPreProcessor,RemoveIrrelevantFeaturesDataPreprocessor, DropTargetNADataPreprocessor, DTWKMeansPreprocessor
 from data_preprocessor.polynomial_features import PolynomialFeaturesPreProcessor
+from data_preprocessor.stockid_features import StockIdFeaturesPreProcessor
+from data_preprocessor.deep_feature_synthesis import DfsPreProcessor
 from data_generator.data_generator import DefaultTrainEvalDataGenerator, ManualKFoldDataGenerator, TimeSeriesKFoldDataGenerator
 
 from model_pipeline.lgb_pipeline import LGBModelPipelineFactory
+from model_pipeline.xgb_pipeline import XGBModelPipelineFactory
+from model_pipeline.cbt_pipeline import CatBoostModelPipelineFactory
 
 from model_post_processor.model_post_processor import CompositeModelPostProcessor, SaveModelPostProcessor
 
@@ -23,7 +27,6 @@ import numpy as np
 import sys
 
 model_name = sys.argv[1]
-# model_name = "best_model_2023_02_19"
 
 print("Model name is", sys.argv[1])
 
@@ -32,9 +35,12 @@ model_save_dir = './models/'
 
 processors = [    
     ReduceMemUsageDataPreprocessor(verbose=True),
-    BasicFeaturesPreprocessor(),
+    # BasicFeaturesPreprocessor(),
     # DupletsTripletsPreprocessor(),
-    # MovingAvgPreProcessor("wap"),    
+    # MovingAvgPreProcessor("wap"),   
+    # StockIdFeaturesPreProcessor(),   
+    # DTWKMeansPreprocessor(),
+    DfsPreProcessor(),
     DropTargetNADataPreprocessor(),    
     RemoveIrrelevantFeaturesDataPreprocessor(['stock_id', 'date_id','time_id', 'row_id']),
     # FillNaPreProcessor(),
@@ -44,7 +50,7 @@ processors = [
 test_processors = [
     BasicFeaturesPreprocessor(),
     # DupletsTripletsPreprocessor()
-    MovingAvgPreProcessor("wap"),
+    EWMAPreProcessor(feature_name='wap', span=20),
     # DropTargetNADataPreprocessor(),
     # RemoveIrrelevantFeaturesDataPreprocessor(['date_id','time_id', 'row_id'])
     RemoveIrrelevantFeaturesDataPreprocessor(['stock_id', 'date_id','time_id', 'row_id'])
@@ -69,14 +75,10 @@ stock_clusters = clustering.get_stock_clusters()
 df_train= df_train.merge(stock_clusters, how='left', on='stock_id')
 
 raw_data = df_train
-# df_train = df_train[:100000]
 df_train = processor.apply(df_train)
 # df_test = test_processors.apply(df_test)
 print(df_train.shape[0])
 print(df_train.columns)
-
-
-
 
 
 
@@ -91,6 +93,9 @@ model_post_processor = CompositeModelPostProcessor([
 
 # lgb_pipeline = DefaultTrainPipeline(LGBModelPipelineFactory(), k_fold_data_generator, model_post_processor, [MAECallback()])
 optuna_lgb_pipeline = DefaultOptunaTrainPipeline(LGBModelPipelineFactory(), time_series_k_fold_data_generator, model_post_processor, [MAECallback()])
+# optuna_lgb_pipeline = DefaultOptunaTrainPipeline(XGBModelPipelineFactory(), time_series_k_fold_data_generator, model_post_processor, [MAECallback()])
+# optuna_lgb_pipeline = DefaultOptunaTrainPipeline(CatBoostModelPipelineFactory(), time_series_k_fold_data_generator, model_post_processor, [MAECallback()])
+
 
 # hyper parameter tunning with optuna
 best_param = optuna_lgb_pipeline.train(df_train)
