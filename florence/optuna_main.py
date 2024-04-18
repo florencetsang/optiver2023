@@ -1,6 +1,6 @@
 from load_data import load_data_from_csv
 from data_preprocessor.data_preprocessor import CompositeDataPreprocessor, ReduceMemUsageDataPreprocessor, FillNaPreProcessor
-from data_preprocessor.feature_engineering import BasicFeaturesPreprocessor, DupletsTripletsPreprocessor, MovingAvgPreProcessor, RemoveIrrelevantFeaturesDataPreprocessor, DropTargetNADataPreprocessor, DTWKMeansPreprocessor
+from data_preprocessor.feature_engineering import BasicFeaturesPreprocessor, DupletsTripletsPreprocessor, MovingAvgPreProcessor, RemoveIrrelevantFeaturesDataPreprocessor, DropTargetNADataPreprocessor, DTWKMeansPreprocessor, RemoveRecordsByStockDateIdPreprocessor, FarNearPriceFillNaPreprocessor
 from data_preprocessor.polynomial_features import PolynomialFeaturesPreProcessor
 from data_preprocessor.stockid_features import StockIdFeaturesPreProcessor
 from data_preprocessor.deep_feature_synthesis import DfsPreProcessor
@@ -34,30 +34,26 @@ print("Model name is", model_name)
 N_fold = 5
 model_save_dir = './models/'
 
-processors = [    
-    ReduceMemUsageDataPreprocessor(verbose=True),
-    # BasicFeaturesPreprocessor(),
+processors = [
+    RemoveRecordsByStockDateIdPreprocessor([
+        {"stock_id": 19, "date_id": 438},
+        {"stock_id": 101, "date_id": 328},
+        {"stock_id": 131, "date_id": 35},
+        {"stock_id": 158, "date_id": 388},
+    ]),
+    FarNearPriceFillNaPreprocessor(),
+    # ReduceMemUsageDataPreprocessor(verbose=True),
+    # BasicFeaturesPreprocessor(),    
     # DupletsTripletsPreprocessor(),
-    # MovingAvgPreProcessor("wap"),   
-    # StockIdFeaturesPreProcessor(),   
-    # DTWKMeansPreprocessor(),
-    # DfsPreProcessor(),
-    DropTargetNADataPreprocessor(),    
-    RemoveIrrelevantFeaturesDataPreprocessor(['stock_id', 'date_id','time_id', 'row_id']),
-    FillNaPreProcessor(1.0),
+    # MovingAvgPreProcessor("wap"),
+    # MovingAvgFillNaPreprocessor("wap", 1.0),
+    # StockIdFeaturesPreProcessor(),  
+    # DropTargetNADataPreprocessor(),    
+    # RemoveIrrelevantFeaturesDataPreprocessor(['stock_id', 'date_id','time_id', 'row_id']),
+    # FillNaPreProcessor(),
     # PolynomialFeaturesPreProcessor(),
 ]
-
-test_processors = [
-    BasicFeaturesPreprocessor(),
-    # DupletsTripletsPreprocessor()
-    MovingAvgPreProcessor("wap"),
-    # DropTargetNADataPreprocessor(),
-    # RemoveIrrelevantFeaturesDataPreprocessor(['date_id','time_id', 'row_id'])
-    RemoveIrrelevantFeaturesDataPreprocessor(['stock_id', 'date_id','time_id', 'row_id'])
-]
 processor = CompositeDataPreprocessor(processors)
-test_processors = CompositeDataPreprocessor(test_processors)
 
 # DATA_PATH = '/kaggle/input'
 DATA_PATH = '..'
@@ -79,11 +75,11 @@ model_post_processor = CompositeModelPostProcessor([
     SaveModelPostProcessor(save_dir=model_save_dir)
 ])
 
-# lgb_pipeline = DefaultTrainPipeline(LGBModelPipelineFactory(), k_fold_data_generator, model_post_processor, [MAECallback()])
-# optuna_pipeline = DefaultOptunaTrainPipeline(LGBModelPipelineFactory(), time_series_k_fold_data_generator, model_post_processor, [MAECallback()])
+# optuna_pipeline = DefaultTrainPipeline(LGBModelPipelineFactory(), k_fold_data_generator, model_post_processor, [MAECallback()])
+optuna_pipeline = DefaultOptunaTrainPipeline(LGBModelPipelineFactory(), time_series_k_fold_data_generator, model_post_processor, [MAECallback()])
 # optuna_pipeline = DefaultOptunaTrainPipeline(XGBModelPipelineFactory(), time_series_k_fold_data_generator, model_post_processor, [MAECallback()])
 # optuna_pipeline = DefaultOptunaTrainPipeline(CatBoostModelPipelineFactory(), time_series_k_fold_data_generator, model_post_processor, [MAECallback()])
-optuna_pipeline = DefaultOptunaTrainPipeline(MLPModelPipelineFactory(model_name), time_series_k_fold_data_generator, model_post_processor, [MAECallback()], 1)
+# optuna_pipeline = DefaultOptunaTrainPipeline(MLPModelPipelineFactory(model_name), time_series_k_fold_data_generator, model_post_processor, [MAECallback()], 1)
 
 
 # hyper parameter tunning with optuna
