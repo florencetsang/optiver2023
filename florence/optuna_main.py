@@ -35,7 +35,8 @@ print("Model name is", model_name)
 N_fold = 5
 model_save_dir = './models/'
 
-processors = [
+processors = [    
+    ReduceMemUsageDataPreprocessor(verbose=True),
     RemoveRecordsByStockDateIdPreprocessor([
         {"stock_id": 19, "date_id": 438},
         {"stock_id": 101, "date_id": 328},
@@ -43,15 +44,16 @@ processors = [
         {"stock_id": 158, "date_id": 388},
     ]),
     FarNearPriceFillNaPreprocessor(),
-    # ReduceMemUsageDataPreprocessor(verbose=True),
-    # BasicFeaturesPreprocessor(),    
+    # BasicFeaturesPreprocessor(),
     # DupletsTripletsPreprocessor(),
     # MovingAvgPreProcessor("wap"),
     # MovingAvgFillNaPreprocessor("wap", 1.0),
-    # StockIdFeaturesPreProcessor(),  
+    # StockIdFeaturesPreProcessor(),   
+    # DTWKMeansPreprocessor(),
+    # DfsPreProcessor(),
     # DropTargetNADataPreprocessor(),    
-    # RemoveIrrelevantFeaturesDataPreprocessor(['stock_id', 'date_id','time_id', 'row_id']),
-    # FillNaPreProcessor(),
+    RemoveIrrelevantFeaturesDataPreprocessor(['stock_id', 'date_id','time_id', 'row_id']),
+    # FillNaPreProcessor(1.0),
     # PolynomialFeaturesPreProcessor(),
 ]
 
