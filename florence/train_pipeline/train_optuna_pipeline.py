@@ -98,7 +98,7 @@ class DefaultOptunaTrainPipeline():
         shap_img = plt.imread(f"img/shap_{save_name}.jpg")
         plt.imshow(shap_img)
 
-    def train(self, df_train, normalize = False):
+    def train(self, df_train):
         print(f"Generate data")
         train_dfs, eval_dfs, num_train_eval_sets = self.train_eval_data_generator.generate(df_train)
 
