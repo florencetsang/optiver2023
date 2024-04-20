@@ -90,7 +90,7 @@ optuna_pipeline = DefaultOptunaTrainPipeline(MLPModelPipelineFactory(model_name,
 
 
 # hyper parameter tunning with optuna
-best_param = optuna_pipeline.train(df_train, normalize=True)
+best_param = optuna_pipeline.train(df_train)
 
 # train model with param
 # trained_models, train_dfs, eval_dfs = optuna_pipeline.train_with_param(
