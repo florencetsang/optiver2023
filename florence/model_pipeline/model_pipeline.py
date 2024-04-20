@@ -31,6 +31,9 @@ class ModelPipeline:
     def get_name(self):
         return "AbstractModelPipeline"
 
+    def get_static_params(self):
+        return None
+
     def get_hyper_params(self, trial):
         return None
 

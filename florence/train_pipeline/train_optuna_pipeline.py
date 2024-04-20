@@ -149,8 +149,8 @@ class DefaultOptunaTrainPipeline():
             model, mean_score = cross_validation_fcn(train_dfs, eval_dfs, param, early_stopping_flag=True)
 
             # retrieve the best iteration of the model and store it as a user attribute in the trial object
-            best_iteration = model.best_iteration_
-            trial.set_user_attr('best_iteration', best_iteration)
+            # best_iteration = model.best_iteration_
+            trial.set_user_attr('model', model)
 
             return mean_score
 
@@ -176,12 +176,7 @@ class DefaultOptunaTrainPipeline():
         #     callback_res = callback.on_callback(models, model_res, train_dfs, eval_dfs, num_train_eval_sets)
         #     callback_results.append(callback_res)
 
-        best_param = {
-            'objective': 'regression_l1',
-            'random_state': 42,
-            'force_col_wise': True,
-            "verbosity": -1,
-        }
+        best_param = self.model_pipeline.get_static_params()
 
         best_param.update(best_trial.params)
 
@@ -195,15 +190,16 @@ class DefaultOptunaTrainPipeline():
         train_dfs, eval_dfs = train_dfs[-1], eval_dfs[-1]
 
         # Fit the model to the training data
-        lgbm_model = lgb.LGBMRegressor(**params)
         X_train_fold, y_train_fold, X_val_fold, y_val_fold = self.model_pipeline.create_XY(train_dfs, eval_dfs)
-        lgbm_model.fit(X_train_fold, y_train_fold)
+        self.model_pipeline.init_model(param=params)
+        self.model_pipeline.train(X_train_fold, y_train_fold, X_val_fold, y_val_fold, {})
+
         best_model_name = self.model_pipeline.get_name_with_params(params)
         save_path = f"best_models/{self.model_pipeline.get_name()}_{best_model_name}"
-        joblib.dump(lgbm_model, save_path)
+        joblib.dump(self.model_pipeline.model, save_path)
         toc = time.perf_counter() # End Time
         print(f"Finished training with params. Took {(toc-tic):.2f}s.")
-        return lgbm_model, train_dfs, eval_dfs, save_path
+        return self.model_pipeline.model, train_dfs, eval_dfs, save_path
 
     def load_model_eval(self, df_train, model_name, best_model_name, shap_data_size=0.01):
         train_dfs, eval_dfs, num_train_eval_sets = self.train_eval_data_generator.generate(df_train)
