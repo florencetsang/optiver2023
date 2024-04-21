@@ -1,6 +1,5 @@
 from utils.ml_utils import MLUtils
 
-
 class ModelPipeline:
     model = None
 
@@ -16,6 +15,9 @@ class ModelPipeline:
         train_X, train_Y = MLUtils.create_XY(df_train)
         eval_X, eval_Y = MLUtils.create_XY(df_eval)
         return train_X, train_Y, eval_X, eval_Y
+    
+    def eval_once(self, x, y):
+        return float('inf')
     
     def _train(self, train_X, train_Y, eval_X, eval_Y):
         return None
