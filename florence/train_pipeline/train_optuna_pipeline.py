@@ -151,8 +151,8 @@ class DefaultOptunaTrainPipeline():
             model, mean_score = cross_validation_fcn(train_dfs, eval_dfs, param, early_stopping_flag=True)
 
             # retrieve the best iteration of the model and store it as a user attribute in the trial object
-            best_iteration = model.best_iteration_
-            trial.set_user_attr('best_iteration', best_iteration)
+            # best_iteration = model.best_iteration_
+            # trial.set_user_attr('best_iteration', best_iteration)
 
             return mean_score
 

@@ -11,6 +11,13 @@ from keras import Sequential
 from keras import losses
 
 class MLPModelPipeline(ModelPipeline):
+
+    layer_choices = [
+        [64,64,64],
+        [32,32,32],
+        [64,32,16],
+    ]
+
     def __init__(self, model_id, num_features=12):
         super().__init__()
         self.model_id = model_id
@@ -24,25 +31,34 @@ class MLPModelPipeline(ModelPipeline):
         # self.model.add(layers.Dense(256, activation='sigmoid'))
         # self.model.add(layers.Dense(128, activation='sigmoid'))
         # self.model.add(layers.Dense(1, activation='softmax'))
-        self.model = Sequential(
-        [
-            # relu
-            layers.Input(shape=(self.num_features,)),
-            layers.Dense(self.param["layers"][0], activation='relu'),
-            layers.Dense(self.param["layers"][1], activation='relu'),
-            layers.Dense(self.param["layers"][2], activation='relu'),
-            layers.Dense(1),
-            # leaky relu
-            # layers.Input(shape=(self.num_features,)),
-            # layers.Dense(128),
-            # layers.LeakyReLU(),
-            # layers.Dense(64),
-            # layers.LeakyReLU(),
-            # layers.Dense(32),
-            # layers.LeakyReLU(),
-            # layers.Dense(1),
-            ]   
-        )
+
+        self.model = Sequential()
+        self.model.add(layers.Input(shape=(self.num_features,)))
+        layer_configs = self.layer_choices[self.param["layers"]]
+        for layer_config in layer_configs:
+            self.model.add(layers.Dense(layer_config, activation='relu'))
+        self.model.add(layers.Dense(1))
+
+
+        # self.model = Sequential(
+        # [
+        #     # relu
+        #     layers.Input(shape=(self.num_features,)),
+        #     layers.Dense(self.param["layers"][0], activation='relu'),
+        #     layers.Dense(self.param["layers"][1], activation='relu'),
+        #     layers.Dense(self.param["layers"][2], activation='relu'),
+        #     layers.Dense(1),
+        #     # leaky relu
+        #     # layers.Input(shape=(self.num_features,)),
+        #     # layers.Dense(128),
+        #     # layers.LeakyReLU(),
+        #     # layers.Dense(64),
+        #     # layers.LeakyReLU(),
+        #     # layers.Dense(32),
+        #     # layers.LeakyReLU(),
+        #     # layers.Dense(1),
+        #     ]   
+        # )
         print(self.model.summary())
         self.model.compile(
             optimizer=optimizers.RMSprop(learning_rate=self.param["learning_rate"]),
@@ -73,7 +89,7 @@ class MLPModelPipeline(ModelPipeline):
         plt.plot(epochs, val_loss, 'b', label='Validation loss')
         plt.title('Training and validation loss')
         plt.legend()
-        plt.show()
+        # plt.show()
         plt.savefig(f'img/mlp_{self.model_id}_loss_{self.fold}.jpg')
     
     def eval_once(self, x, y):
@@ -91,8 +107,8 @@ class MLPModelPipeline(ModelPipeline):
     def get_hyper_params(self, trial):
         return {
             'learning_rate': trial.suggest_float('learning_rate', 0.000004, 0.0001, log=True),
-            'layers': trial.suggest_categorical('layers', [[128,64,32],[96,96,96],[64,128,64]]),
-            'epochs': 10,
+            'layers': trial.suggest_categorical('layers', [0,1,2]),
+            'epochs': 30,
             'batch_size': 256,
         }
 
