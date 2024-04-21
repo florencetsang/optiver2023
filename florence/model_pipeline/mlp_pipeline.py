@@ -111,10 +111,14 @@ class MLPModelPipeline(ModelPipeline):
         }
 
     def get_hyper_params(self, trial):
-        return {
-            'learning_rate': trial.suggest_float('learning_rate', 0.000004, 0.0001, log=True),
-            'layers': trial.suggest_categorical('layers', [0,1,2]),
-        }
+        hyper_params_dict = self.get_static_params()
+        hyper_params_dict.update(
+            {
+                'learning_rate': trial.suggest_float('learning_rate', 0.000004, 0.0001, log=True),
+                'layers': trial.suggest_categorical('layers', [0, 1, 2]),
+            }
+        )
+        return hyper_params_dict
 
 
 class MLPModelPipelineFactory(ModelPipelineFactory):

@@ -29,6 +29,7 @@ import numpy as np
 import sys
 
 model_name = sys.argv[1]
+model_type = sys.argv[2]
 
 print("Model name is", model_name)
 
@@ -65,6 +66,7 @@ df_train, df_test, revealed_targets, sample_submission = load_data_from_csv(DATA
 print(df_train.columns)
 
 raw_data = df_train
+df_train = df_train[6000:7000]
 df_train = processor.apply(df_train)
 # df_test = test_processors.apply(df_test)
 print(df_train.shape[0])
@@ -82,11 +84,15 @@ model_post_processor = CompositeModelPostProcessor([
     SaveModelPostProcessor(save_dir=model_save_dir)
 ])
 
-# optuna_pipeline = DefaultTrainPipeline(LGBModelPipelineFactory(), k_fold_data_generator, model_post_processor, [MAECallback()])
-# optuna_pipeline = DefaultOptunaTrainPipeline(LGBModelPipelineFactory(), time_series_k_fold_data_generator, model_post_processor, [MAECallback()])
-# optuna_pipeline = DefaultOptunaTrainPipeline(XGBModelPipelineFactory(), time_series_k_fold_data_generator, model_post_processor, [MAECallback()])
-# optuna_pipeline = DefaultOptunaTrainPipeline(CatBoostModelPipelineFactory(), time_series_k_fold_data_generator, model_post_processor, [MAECallback()])
-optuna_pipeline = DefaultOptunaTrainPipeline(MLPModelPipelineFactory(model_name, len(df_train.columns)-1), last_fold_data_generator, model_post_processor, [MAECallback()])
+optuna_pipeline = None
+if model_type == 'lgb':
+    optuna_pipeline = DefaultOptunaTrainPipeline(LGBModelPipelineFactory(), time_series_k_fold_data_generator, model_post_processor, [MAECallback()])
+elif model_type == 'xgb':
+    optuna_pipeline = DefaultOptunaTrainPipeline(XGBModelPipelineFactory(), time_series_k_fold_data_generator, model_post_processor, [MAECallback()])
+elif model_type == 'cb':
+    optuna_pipeline = DefaultOptunaTrainPipeline(CatBoostModelPipelineFactory(), time_series_k_fold_data_generator, model_post_processor, [MAECallback()])
+elif model_type == 'mlp':
+    optuna_pipeline = DefaultOptunaTrainPipeline(MLPModelPipelineFactory(model_name, len(df_train.columns)-1), last_fold_data_generator, model_post_processor, [MAECallback()])
 
 
 # hyper parameter tunning with optuna

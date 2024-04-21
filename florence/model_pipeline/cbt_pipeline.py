@@ -43,14 +43,18 @@ class CatBoostModelPipeline(ModelPipeline):
         }
 
     def get_hyper_params(self, trial):
-        return {
-            "learning_rate": trial.suggest_float("learning_rate", 1e-3, 0.1, log=True),
-            "depth": trial.suggest_int("depth", 1, 10),
-            "subsample": trial.suggest_float("subsample", 0.05, 1.0),
-            "colsample_bylevel": trial.suggest_float("colsample_bylevel", 0.05, 1.0),
-            "min_data_in_leaf": trial.suggest_int("min_data_in_leaf", 1, 100),
-            'iterations': trial.suggest_int('n_estimators', 100, 1000, step=100),
-        }
+        hyper_params_dict = self.get_static_params()
+        hyper_params_dict.update(
+            {
+                "learning_rate": trial.suggest_float("learning_rate", 1e-3, 0.1, log=True),
+                "depth": trial.suggest_int("depth", 1, 10),
+                "subsample": trial.suggest_float("subsample", 0.05, 1.0),
+                "colsample_bylevel": trial.suggest_float("colsample_bylevel", 0.05, 1.0),
+                "min_data_in_leaf": trial.suggest_int("min_data_in_leaf", 1, 100),
+                'iterations': trial.suggest_int('n_estimators', 100, 1000, step=100),
+            }
+        )
+        return hyper_params_dict
 
 
 class CatBoostModelPipelineFactory(ModelPipelineFactory):

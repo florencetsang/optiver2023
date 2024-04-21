@@ -49,20 +49,24 @@ class XGBModelPipeline(ModelPipeline):
         }
 
     def get_hyper_params(self, trial):
-        return {
-            'n_estimators': trial.suggest_int('n_estimators', 100, 1000, step=100),
-            'max_depth': trial.suggest_int('max_depth', 1, 10),
-            "booster": trial.suggest_categorical("booster", ["gbtree", "gblinear", "dart"]),
-            # L2 regularization weight.
-            "reg_lambda": trial.suggest_float("reg_lambda", 1e-8, 1.0, log=True),
-            # L1 regularization weight.
-            "reg_alpha": trial.suggest_float("reg_alpha", 1e-8, 1.0, log=True),
-            # sampling ratio for training data.
-            "subsample": trial.suggest_float("subsample", 0.2, 1.0),
-            # defines booster, gblinear for linear functions.
-            # sampling according to each tree.
-            "colsample_bytree": trial.suggest_float("colsample_bytree", 0.2, 1.0),
-        }
+        hyper_params_dict = self.get_static_params()
+        hyper_params_dict.update(
+            {
+                'n_estimators': trial.suggest_int('n_estimators', 100, 1000, step=100),
+                'max_depth': trial.suggest_int('max_depth', 1, 10),
+                "booster": trial.suggest_categorical("booster", ["gbtree", "gblinear", "dart"]),
+                # L2 regularization weight.
+                "reg_lambda": trial.suggest_float("reg_lambda", 1e-8, 1.0, log=True),
+                # L1 regularization weight.
+                "reg_alpha": trial.suggest_float("reg_alpha", 1e-8, 1.0, log=True),
+                # sampling ratio for training data.
+                "subsample": trial.suggest_float("subsample", 0.2, 1.0),
+                # defines booster, gblinear for linear functions.
+                # sampling according to each tree.
+                "colsample_bytree": trial.suggest_float("colsample_bytree", 0.2, 1.0),
+            }
+        )
+        return hyper_params_dict
 
 class XGBModelPipelineFactory(ModelPipelineFactory):
     def create_model_pipeline(self) -> ModelPipeline:
