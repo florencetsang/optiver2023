@@ -1,10 +1,11 @@
 import numpy as np
 from sklearn.model_selection import TimeSeriesSplit
+from sklearn import preprocessing
 
 class TrainEvalDataGenerator:
     def generate(self, df_train):
         return None, None, None
-
+    
 class DefaultTrainEvalDataGenerator(TrainEvalDataGenerator):
     def generate(self, df_train):
         # whole df_train is training set, no validation set
@@ -39,8 +40,40 @@ class TimeSeriesKFoldDataGenerator(TrainEvalDataGenerator):
         else:
             tscv = TimeSeriesSplit(n_splits=self.n_fold)
         for i, (train_index, test_index) in enumerate(tscv.split(data)):
-            fold_df_train = data.iloc[train_index]
-            fold_df_eval = data.iloc[test_index]
+            fold_df_train = data.iloc[train_index].copy(deep=True)
+            fold_df_eval = data.iloc[test_index].copy(deep=True)
             train_dfs.append(fold_df_train)
             eval_dfs.append(fold_df_eval)
         return train_dfs, eval_dfs, self.n_fold
+    
+class TimeSeriesLastFoldDataGenerator(TrainEvalDataGenerator):
+
+    def __init__(self, test_set_ratio=0.1, normalize=False):
+        super().__init__()
+        self.test_set_ratio = test_set_ratio
+        self.normalize = normalize
+
+    def generate(self, df_train):    
+        time_series_k_fold_data_generator = TimeSeriesKFoldDataGenerator(n_fold=2, test_set_ratio = 0.1)
+        train_dfs, eval_dfs, num_train_eval_sets = time_series_k_fold_data_generator.generate(df_train)
+
+        train = train_dfs[-1]
+        eval = eval_dfs[-1]
+
+        if self.normalize:
+            normalize_columns = [
+                "imbalance_size",
+                "matched_size",
+                "bid_size",
+                "ask_size",
+            ]
+            normalize_columns = list(normalize_columns.intersection(set(train.columns)))
+
+            scaler = preprocessing.StandardScaler()
+            scaler.fit(train[normalize_columns])
+            train[normalize_columns] = scaler.transform(train[normalize_columns])
+            eval[normalize_columns] = scaler.transform(eval[normalize_columns])
+
+        return [train], [eval], 1
+    
+

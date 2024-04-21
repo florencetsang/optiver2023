@@ -116,6 +116,12 @@ class ReduceMemUsageDataPreprocessor(DataPreprocessor):
         return df
 
 class FillNaPreProcessor(DataPreprocessor):
+
+    def __init__(self, value = 0.0):
+        super().__init__()
+        self.value = value
+
+
     def apply(self, df):
-       df = df.fillna(0.0)
+       df = df.fillna(self.value)
        return df
