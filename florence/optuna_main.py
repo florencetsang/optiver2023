@@ -32,6 +32,7 @@ model_name = sys.argv[1]
 model_type = sys.argv[2]
 
 print("Model name is", model_name)
+print(f"Model type: {model_type}")
 
 N_fold = 5
 model_save_dir = './models/'
@@ -62,13 +63,12 @@ processor = CompositeDataPreprocessor(processors)
 
 # DATA_PATH = '/kaggle/input'
 DATA_PATH = '..'
-df_train, df_test, revealed_targets, sample_submission = load_data_from_csv(DATA_PATH)
+df_train, df_val, df_test, revealed_targets, sample_submission = load_data_from_csv(DATA_PATH)
 print(df_train.columns)
 
 raw_data = df_train
-df_train = df_train[6000:7000]
 df_train = processor.apply(df_train)
-# df_test = test_processors.apply(df_test)
+df_val = processor.apply(df_val)
 print(df_train.shape[0])
 print(df_train.columns)
 
@@ -118,8 +118,8 @@ trained_models, train_dfs, eval_dfs = optuna_pipeline.load_model_eval(
 )
 
 
-model_avg_mae = ScoringUtils.calculate_mae([trained_models], eval_dfs)
+model_avg_mae = ScoringUtils.calculate_mae([trained_models], [df_val])
 print(model_avg_mae)
 
-baseline_avg_mae = ScoringUtils.calculate_mae([BaselineEstimator()], [df_train])
+baseline_avg_mae = ScoringUtils.calculate_mae([BaselineEstimator()], [df_val])
 print(baseline_avg_mae)
