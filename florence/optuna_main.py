@@ -72,16 +72,17 @@ processor = CompositeDataPreprocessor(processors)
 # DATA_PATH = '/kaggle/input'
 DATA_PATH = '..'
 df_train, df_val, df_test, revealed_targets, sample_submission = load_data_from_csv(DATA_PATH)
+print(f"df details - df_train: {df_train.shape}, df_val: {df_val.shape}")
 print(df_train.columns)
 
 raw_data = df_train
+print(f"run pre-processors - start")
 df_train = processor.apply(df_train)
+print(f"run pre-processors - applied on df_train")
 df_val = processor.apply(df_val)
-print(df_train.shape[0])
+print(f"run pre-processors - applied on df_val")
+print(f"df details - df_train: {df_train.shape}, df_val: {df_val.shape}")
 print(df_train.columns)
-
-
-
 
 default_data_generator = DefaultTrainEvalDataGenerator()
 k_fold_data_generator = ManualKFoldDataGenerator(n_fold=N_fold)

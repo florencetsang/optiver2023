@@ -77,6 +77,7 @@ class MLPModelPipeline(ModelPipeline):
         self.history = None
 
     def train(self, train_X, train_Y, eval_X, eval_Y, eval_res):
+        print(f"train - train_X: {train_X.shape}, train_Y: {train_Y.shape}, eval_X: {eval_X.shape}, eval_Y: {eval_Y.shape}")
         try:
             self.history = self.model.fit(
                 train_X,
@@ -104,7 +105,7 @@ class MLPModelPipeline(ModelPipeline):
 
     def get_static_params(self):
         return {
-            'epochs': 30,
+            'epochs': 3,
             'batch_size': 256,
         }
 
