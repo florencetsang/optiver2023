@@ -104,13 +104,21 @@ class MLPModelPipeline(ModelPipeline):
     #     selected_params_for_model_id = ['learning_rate', 'max_depth', 'n_estimators']
     #     return "_".join([f"{param_n}_{params[param_n]}" for param_n in selected_params_for_model_id])
 
-    def get_hyper_params(self, trial):
+    def get_static_params(self):
         return {
-            'learning_rate': trial.suggest_float('learning_rate', 0.000004, 0.0001, log=True),
-            'layers': trial.suggest_categorical('layers', [0,1,2]),
             'epochs': 30,
             'batch_size': 256,
         }
+
+    def get_hyper_params(self, trial):
+        hyper_params_dict = self.get_static_params()
+        hyper_params_dict.update(
+            {
+                'learning_rate': trial.suggest_float('learning_rate', 0.000004, 0.0001, log=True),
+                'layers': trial.suggest_categorical('layers', [0, 1, 2]),
+            }
+        )
+        return hyper_params_dict
 
 
 class MLPModelPipelineFactory(ModelPipelineFactory):
