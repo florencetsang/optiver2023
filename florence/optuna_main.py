@@ -32,12 +32,14 @@ import sys
 
 parser = argparse.ArgumentParser(prog='optuna_main', description='optuna_main')
 parser.add_argument('model_name')
+parser.add_argument('model_type')
 parser.add_argument('--trials', type=int, default=10, help="number of optuna trials")
 
 args = parser.parse_args()
 model_name = args.model_name
+model_type = args.model_type
 num_trials = args.trials
-print(f"Model name is {model_name}, num_trials: {num_trials}")
+print(f"Model name is {model_name}, Model type: {model_type}, num_trials: {num_trials}")
 
 N_fold = 5
 model_save_dir = './models/'
@@ -69,12 +71,12 @@ processor = CompositeDataPreprocessor(processors)
 
 # DATA_PATH = '/kaggle/input'
 DATA_PATH = '..'
-df_train, df_test, revealed_targets, sample_submission = load_data_from_csv(DATA_PATH)
+df_train, df_val, df_test, revealed_targets, sample_submission = load_data_from_csv(DATA_PATH)
 print(df_train.columns)
 
 raw_data = df_train
 df_train = processor.apply(df_train)
-# df_test = test_processors.apply(df_test)
+df_val = processor.apply(df_val)
 print(df_train.shape[0])
 print(df_train.columns)
 
@@ -90,21 +92,25 @@ model_post_processor = CompositeModelPostProcessor([
     SaveModelPostProcessor(save_dir=model_save_dir)
 ])
 
-# optuna_pipeline = DefaultTrainPipeline(LGBModelPipelineFactory(), k_fold_data_generator, model_post_processor, [MAECallback()])
-# optuna_pipeline = DefaultOptunaTrainPipeline(LGBModelPipelineFactory(), time_series_k_fold_data_generator, model_post_processor, [MAECallback()])
-# optuna_pipeline = DefaultOptunaTrainPipeline(XGBModelPipelineFactory(), time_series_k_fold_data_generator, model_post_processor, [MAECallback()])
-# optuna_pipeline = DefaultOptunaTrainPipeline(CatBoostModelPipelineFactory(), time_series_k_fold_data_generator, model_post_processor, [MAECallback()])
-optuna_pipeline = DefaultOptunaTrainPipeline(
-    MLPModelPipelineFactory(
-        model_name,
-        plot_path,
-        len(df_train.columns)-1
-    ),
-    last_fold_data_generator,
-    model_post_processor,
-    [MAECallback()],
-    num_trials=num_trials,
-)
+optuna_pipeline = None
+if model_type == 'lgb':
+    optuna_pipeline = DefaultOptunaTrainPipeline(LGBModelPipelineFactory(), time_series_k_fold_data_generator, model_post_processor, [MAECallback()])
+elif model_type == 'xgb':
+    optuna_pipeline = DefaultOptunaTrainPipeline(XGBModelPipelineFactory(), time_series_k_fold_data_generator, model_post_processor, [MAECallback()])
+elif model_type == 'cb':
+    optuna_pipeline = DefaultOptunaTrainPipeline(CatBoostModelPipelineFactory(), time_series_k_fold_data_generator, model_post_processor, [MAECallback()])
+elif model_type == 'mlp':
+    optuna_pipeline = DefaultOptunaTrainPipeline(
+        MLPModelPipelineFactory(
+            model_name,
+            plot_path,
+            len(df_train.columns)-1
+        ),
+        last_fold_data_generator,
+        model_post_processor,
+        [MAECallback()],
+        num_trials=num_trials,
+    )
 
 
 # hyper parameter tunning with optuna
@@ -130,8 +136,8 @@ trained_models, train_dfs, eval_dfs = optuna_pipeline.load_model_eval(
 )
 
 
-model_avg_mae = ScoringUtils.calculate_mae([trained_models], eval_dfs)
+model_avg_mae = ScoringUtils.calculate_mae([trained_models], [df_val])
 print(model_avg_mae)
 
-baseline_avg_mae = ScoringUtils.calculate_mae([BaselineEstimator()], [df_train])
+baseline_avg_mae = ScoringUtils.calculate_mae([BaselineEstimator()], [df_val])
 print(baseline_avg_mae)
