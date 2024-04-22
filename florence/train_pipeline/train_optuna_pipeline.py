@@ -15,6 +15,8 @@ import optuna
 import time
 import json
 
+from os import path
+
 class DefaultOptunaTrainPipeline():
     def __init__(
             self,
@@ -218,8 +220,15 @@ class DefaultOptunaTrainPipeline():
         self.model_pipeline.train(X_train_fold, y_train_fold, X_val_fold, y_val_fold, {})
 
         best_model_name = self.model_pipeline.get_name_with_params(params)
-        save_path = f"best_models/{self.model_pipeline.get_name()}_{best_model_name}"
-        joblib.dump(self.model_pipeline.model, save_path)
+
+        if name=="mlp":
+            save_path = path.join(self.save_dir, f'{self.model_pipeline.get_name()}_{best_model_name}.keras')
+            self.model_pipeline.model.save(save_path)
+        else:
+            save_path = f"best_models/{self.model_pipeline.get_name()}_{best_model_name}"
+            joblib.dump(self.model_pipeline.model, save_path)
+       
+
         toc = time.perf_counter() # End Time
         print(f"Finished training with params. Took {(toc-tic):.2f}s.")
         return self.model_pipeline.model, train_dfs, eval_dfs, save_path
