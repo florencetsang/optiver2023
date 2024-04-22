@@ -1,3 +1,5 @@
+import argparse
+
 from load_data import load_data_from_csv
 from data_preprocessor.data_preprocessor import CompositeDataPreprocessor, ReduceMemUsageDataPreprocessor, FillNaPreProcessor
 
@@ -28,12 +30,18 @@ import numpy as np
 
 import sys
 
-model_name = sys.argv[1]
+parser = argparse.ArgumentParser(prog='optuna_main', description='optuna_main')
+parser.add_argument('model_name')
+parser.add_argument('--trials', type=int, default=10, help="number of optuna trials")
 
-print("Model name is", model_name)
+args = parser.parse_args()
+model_name = args.model_name
+num_trials = args.trials
+print(f"Model name is {model_name}, num_trials: {num_trials}")
 
 N_fold = 5
 model_save_dir = './models/'
+plot_path = "./img"
 
 processors = [    
     ReduceMemUsageDataPreprocessor(verbose=True),
@@ -76,7 +84,7 @@ print(df_train.columns)
 default_data_generator = DefaultTrainEvalDataGenerator()
 k_fold_data_generator = ManualKFoldDataGenerator(n_fold=N_fold)
 time_series_k_fold_data_generator = TimeSeriesKFoldDataGenerator(n_fold=N_fold, test_set_ratio=0.1)
-last_fold_data_generator = TimeSeriesLastFoldDataGenerator(test_set_ratio=0.1)
+last_fold_data_generator = TimeSeriesLastFoldDataGenerator(test_set_ratio=0.1, normalize=True)
 
 model_post_processor = CompositeModelPostProcessor([
     SaveModelPostProcessor(save_dir=model_save_dir)
@@ -86,7 +94,17 @@ model_post_processor = CompositeModelPostProcessor([
 # optuna_pipeline = DefaultOptunaTrainPipeline(LGBModelPipelineFactory(), time_series_k_fold_data_generator, model_post_processor, [MAECallback()])
 # optuna_pipeline = DefaultOptunaTrainPipeline(XGBModelPipelineFactory(), time_series_k_fold_data_generator, model_post_processor, [MAECallback()])
 # optuna_pipeline = DefaultOptunaTrainPipeline(CatBoostModelPipelineFactory(), time_series_k_fold_data_generator, model_post_processor, [MAECallback()])
-optuna_pipeline = DefaultOptunaTrainPipeline(MLPModelPipelineFactory(model_name, len(df_train.columns)-1), last_fold_data_generator, model_post_processor, [MAECallback()])
+optuna_pipeline = DefaultOptunaTrainPipeline(
+    MLPModelPipelineFactory(
+        model_name,
+        plot_path,
+        len(df_train.columns)-1
+    ),
+    last_fold_data_generator,
+    model_post_processor,
+    [MAECallback()],
+    num_trials=num_trials,
+)
 
 
 # hyper parameter tunning with optuna

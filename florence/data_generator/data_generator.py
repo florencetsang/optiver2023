@@ -61,12 +61,12 @@ class TimeSeriesLastFoldDataGenerator(TrainEvalDataGenerator):
         eval = eval_dfs[-1]
 
         if self.normalize:
-            normalize_columns = [
+            normalize_columns = set([
                 "imbalance_size",
                 "matched_size",
                 "bid_size",
                 "ask_size",
-            ]
+            ])
             normalize_columns = list(normalize_columns.intersection(set(train.columns)))
 
             scaler = preprocessing.StandardScaler()
