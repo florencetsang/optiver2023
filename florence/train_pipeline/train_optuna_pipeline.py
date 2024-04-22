@@ -207,7 +207,7 @@ class DefaultOptunaTrainPipeline():
 
         return best_param
 
-    def train_with_param(self, df_train, params, name):
+    def train_with_param(self, df_train, params, name, model_type):
         print(f"Start training with params: {params}.")
         tic = time.perf_counter() # Start Time
         train_dfs, eval_dfs, num_train_eval_sets = self.train_eval_data_generator.generate(df_train)
@@ -221,7 +221,7 @@ class DefaultOptunaTrainPipeline():
 
         best_model_name = self.model_pipeline.get_name_with_params(params)
 
-        if name=="mlp":
+        if model_type=="mlp":
             save_path = path.join(self.save_dir, f'{self.model_pipeline.get_name()}_{best_model_name}.keras')
             self.model_pipeline.model.save(save_path)
         else:
