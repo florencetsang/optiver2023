@@ -222,7 +222,7 @@ class DefaultOptunaTrainPipeline():
         best_model_name = self.model_pipeline.get_name_with_params(params)
 
         if model_type=="mlp":
-            save_path = path.join(self.save_dir, f'{self.model_pipeline.get_name()}_{best_model_name}.keras')
+            save_path = f"best_models/{self.model_pipeline.get_name()}_{best_model_name}.keras"
             self.model_pipeline.model.save(save_path)
         else:
             save_path = f"best_models/{self.model_pipeline.get_name()}_{best_model_name}"
