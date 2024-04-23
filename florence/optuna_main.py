@@ -134,7 +134,7 @@ trained_models, train_dfs, eval_dfs, best_model_name = optuna_pipeline.train_wit
 trained_models, train_dfs, eval_dfs = optuna_pipeline.load_model_eval(
     df_train,
     model_name,
-    best_model_name
+    best_model_name,
     model_type = model_type
 )
 
