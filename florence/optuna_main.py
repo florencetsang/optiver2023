@@ -123,7 +123,7 @@ best_param = optuna_pipeline.train(df_train)
 #     params={'n_estimators': 2700, 'reg_alpha': 1.666271247059715, 'reg_lambda': 0.0013314248446567097, 'colsample_bytree': 0.6512412430910787, 'subsample': 0.5550654570575708, 'learning_rate': 0.0124880163018859, 'max_depth': 11, 'num_leaves': 354, 'min_child_samples': 71,
 #             'objective': 'regression_l1', 'random_state': 42, 'force_col_wise': True, "verbosity": -1}
 # )
-trained_models, train_dfs, eval_dfs, best_model_name = optuna_pipeline.train_with_param(
+trained_models, train_dfs, eval_dfs, save_path = optuna_pipeline.train_with_param(
     df_train,
     params=best_param,
     model_name = model_name,
@@ -134,7 +134,7 @@ trained_models, train_dfs, eval_dfs, best_model_name = optuna_pipeline.train_wit
 trained_models, train_dfs, eval_dfs = optuna_pipeline.load_model_eval(
     df_train,
     model_name,
-    best_model_name,
+    save_path,
     model_type = model_type
 )
 
