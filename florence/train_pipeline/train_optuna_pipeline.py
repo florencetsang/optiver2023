@@ -207,7 +207,7 @@ class DefaultOptunaTrainPipeline():
 
         return best_param
 
-    def train_with_param(self, df_train, params, name, model_type):
+    def train_with_param(self, df_train, params, model_name, model_type):
         print(f"Start training with params: {params}.")
         tic = time.perf_counter() # Start Time
         train_dfs, eval_dfs, num_train_eval_sets = self.train_eval_data_generator.generate(df_train)
@@ -222,10 +222,10 @@ class DefaultOptunaTrainPipeline():
         best_model_name = self.model_pipeline.get_name_with_params(params)
 
         if model_type=="mlp":
-            save_path = f"best_models/{self.model_pipeline.get_name()}_{best_model_name}.keras"
+            save_path = f"best_models/{self.model_pipeline.get_name()}_{best_model_name}_{model_name}.keras"
             self.model_pipeline.model.save(save_path)
         else:
-            save_path = f"best_models/{self.model_pipeline.get_name()}_{best_model_name}"
+            save_path = f"best_models/{self.model_pipeline.get_name()}_{best_model_name}_{model_name}"
             joblib.dump(self.model_pipeline.model, save_path)
        
 
@@ -233,13 +233,18 @@ class DefaultOptunaTrainPipeline():
         print(f"Finished training with params. Took {(toc-tic):.2f}s.")
         return self.model_pipeline.model, train_dfs, eval_dfs, save_path
 
-    def load_model_eval(self, df_train, model_name, best_model_name, shap_data_size=0.01):
+    def load_model_eval(self, df_train, model_name, best_model_name, model_type, shap_data_size=0.01):
         train_dfs, eval_dfs, num_train_eval_sets = self.train_eval_data_generator.generate(df_train)
         # pick last training testing pair for feature eval
         last_train_dfs, last_eval_dfs = train_dfs[-1], eval_dfs[-1]
-        lgbm_model = joblib.load(best_model_name)
-        self.plot_feature_importance(lgbm_model, last_eval_dfs, model_name)
-        self.plot_shap(lgbm_model, last_train_dfs, last_eval_dfs, model_name, shap_data_size)
+        model = None
+        if model_type=="mlp":
+            save_path = f"best_models/{self.model_pipeline.get_name()}_{best_model_name}.keras"
+            self.model_pipeline.model.save(save_path)
+        else:
+            model = joblib.load(best_model_name)
+        self.plot_feature_importance(model, last_eval_dfs, model_name)
+        self.plot_shap(model, last_train_dfs, last_eval_dfs, model_name, shap_data_size)
 
-        return lgbm_model, train_dfs, eval_dfs
+        return model, train_dfs, eval_dfs
 
