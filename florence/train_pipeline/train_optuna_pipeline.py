@@ -243,8 +243,8 @@ class DefaultOptunaTrainPipeline():
             model = keras.models.load_model(save_path)
         else:
             model = joblib.load(save_path)
-        # self.plot_feature_importance(model, last_eval_dfs, model_name)
-        # self.plot_shap(model, last_train_dfs, last_eval_dfs, model_name, shap_data_size)
+            self.plot_feature_importance(model, last_eval_dfs, model_name)
+            self.plot_shap(model, last_train_dfs, last_eval_dfs, model_name, shap_data_size)
 
         return model, train_dfs, eval_dfs
 
