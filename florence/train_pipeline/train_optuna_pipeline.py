@@ -13,6 +13,10 @@ import matplotlib.pyplot as plt
 import joblib
 import optuna
 import time
+import json
+
+from os import path
+import keras
 
 class DefaultOptunaTrainPipeline():
     def __init__(
@@ -123,43 +127,63 @@ class DefaultOptunaTrainPipeline():
             - mean_mse: the average MSE score across all folds
             """
             mse_list = []
-            for fold_index in range(len(train_dfs)):
+            num_folds = len(train_dfs)
+            for fold_index in range(num_folds):
+                print(f"train fold {fold_index+1}/{num_folds} - start")
+                
                 # Split the data into training and validation sets
                 X_train_fold, y_train_fold, X_val_fold, y_val_fold = self.model_pipeline.create_XY(train_dfs[fold_index], eval_dfs[fold_index])
 
                 # create the LightGBM regressor with the optimized parameters
                 self.model_pipeline.init_model(param=param)
+                print(f"fold {fold_index+1}/{num_folds} - initialized params")
                 # Train the model on the training set
                 eval_res = {}
                 # Use early stopping if enabled
                 self.model_pipeline.train(X_train_fold, y_train_fold, X_val_fold, y_val_fold, eval_res)
+                print(f"fold {fold_index+1}/{num_folds} - finished training")
 
+                self.model_pipeline.post_train()
+                print(f"fold {fold_index+1}/{num_folds} - finished post_train")
 
                 # Make predictions on the validation set and calculate the MSE score
                 y_pred = self.model_pipeline.model.predict(X_val_fold)
                 mse = mean_absolute_error(y_val_fold, y_pred)
                 mse_list.append(mse)
+                print(f"fold {fold_index+1}/{num_folds} - mae: {mse}")
+                
+                print(f"train fold {fold_index+1}/{num_folds} - end")
 
             # Return the trained model and the average MSE score
             return self.model_pipeline.model, np.mean(mse_list)
 
         def objective(trial):
+            print(f"optuna trial {trial.number+1}/{self.num_trials} - start")
+            
             # set up the parameters to be optimized
             param = self.model_pipeline.get_hyper_params(trial)
+            print(f"optuna trial {trial.number+1}/{self.num_trials} - params: {json.dumps(param, indent=2)}")
 
             # perform cross-validation using the optimized LightGBM regressor
             model, mean_score = cross_validation_fcn(train_dfs, eval_dfs, param, early_stopping_flag=True)
+            print(f"optuna trial {trial.number+1}/{self.num_trials} - finished cross_validation_fcn")
 
             # retrieve the best iteration of the model and store it as a user attribute in the trial object
-            # best_iteration = model.best_iteration_
+            if hasattr(model, 'best_iteration_'):
+                best_iteration = model.best_iteration_
+                trial.set_user_attr('best_iteration', best_iteration)
+            else:
+                print(f"model does not have best_iteration_ attribute")
             trial.set_user_attr('model', model)
+
+            print(f"optuna trial {trial.number+1}/{self.num_trials} - end")
 
             return mean_score
 
         study = optuna.create_study(direction="minimize")
         study.optimize(objective, n_trials=self.num_trials)
 
-        print("Number of finished trials: {}".format(len(study.trials)))
+        print(f"Number of finished trials (total: {self.num_trials}): {len(study.trials)}")
 
         print("Best trial:")
         best_trial = study.best_trial
@@ -184,7 +208,7 @@ class DefaultOptunaTrainPipeline():
 
         return best_param
 
-    def train_with_param(self, df_train, params, name):
+    def train_with_param(self, df_train, params, model_name, model_type):
         print(f"Start training with params: {params}.")
         tic = time.perf_counter() # Start Time
         train_dfs, eval_dfs, num_train_eval_sets = self.train_eval_data_generator.generate(df_train)
@@ -197,19 +221,30 @@ class DefaultOptunaTrainPipeline():
         self.model_pipeline.train(X_train_fold, y_train_fold, X_val_fold, y_val_fold, {})
 
         best_model_name = self.model_pipeline.get_name_with_params(params)
-        save_path = f"best_models/{self.model_pipeline.get_name()}_{best_model_name}"
-        joblib.dump(self.model_pipeline.model, save_path)
+
+        if model_type=="mlp":
+            save_path = f"best_models/{self.model_pipeline.get_name()}_{best_model_name}_{model_name}.keras"
+            self.model_pipeline.model.save(save_path)
+        else:
+            save_path = f"best_models/{self.model_pipeline.get_name()}_{best_model_name}_{model_name}"
+            joblib.dump(self.model_pipeline.model, save_path)
+       
+
         toc = time.perf_counter() # End Time
         print(f"Finished training with params. Took {(toc-tic):.2f}s.")
         return self.model_pipeline.model, train_dfs, eval_dfs, save_path
 
-    def load_model_eval(self, df_train, model_name, best_model_name, shap_data_size=0.01):
+    def load_model_eval(self, df_train, model_name, save_path, model_type, shap_data_size=0.01):
         train_dfs, eval_dfs, num_train_eval_sets = self.train_eval_data_generator.generate(df_train)
         # pick last training testing pair for feature eval
         last_train_dfs, last_eval_dfs = train_dfs[-1], eval_dfs[-1]
-        lgbm_model = joblib.load(best_model_name)
-        self.plot_feature_importance(lgbm_model, last_eval_dfs, model_name)
-        self.plot_shap(lgbm_model, last_train_dfs, last_eval_dfs, model_name, shap_data_size)
+        model = None
+        if model_type=="mlp":
+            model = keras.models.load_model(save_path)
+        else:
+            model = joblib.load(save_path)
+            self.plot_feature_importance(model, last_eval_dfs, model_name)
+            self.plot_shap(model, last_train_dfs, last_eval_dfs, model_name, shap_data_size)
 
-        return lgbm_model, train_dfs, eval_dfs
+        return model, train_dfs, eval_dfs
 

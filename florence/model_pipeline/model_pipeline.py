@@ -10,6 +10,9 @@ class ModelPipeline:
         train_X, train_Y, eval_X, eval_Y = self.create_XY(df_train, df_eval)
         res = self._train(train_X, train_Y, eval_X, eval_Y)
         return res
+
+    def post_train(self):
+        pass
     
     def create_XY(self, df_train, df_eval):
         train_X, train_Y = MLUtils.create_XY(df_train)
