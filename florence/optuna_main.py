@@ -21,6 +21,7 @@ from train_pipeline.train_optuna_pipeline import DefaultOptunaTrainPipeline
 
 from train_pipeline.train_pipeline_callbacks import MAECallback
 from utils.scoring_utils import ScoringUtils
+from utils.number_utils import NumberUtils
 from model_pipeline.dummy_models import BaselineEstimator
 
 import optuna.integration.lightgbm as lgb
@@ -138,6 +139,8 @@ trained_models, train_dfs, eval_dfs = optuna_pipeline.load_model_eval(
     model_type = model_type
 )
 
+if model_type == 'mlp':
+    NumberUtils.normalize_data(df_val)
 
 model_avg_mae = ScoringUtils.calculate_mae([trained_models], [df_val])
 print(model_avg_mae)
