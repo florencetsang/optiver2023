@@ -3,7 +3,7 @@ import argparse
 from load_data import load_data_from_csv
 from data_preprocessor.data_preprocessor import CompositeDataPreprocessor, ReduceMemUsageDataPreprocessor, FillNaPreProcessor
 
-from data_preprocessor.feature_engineering import BasicFeaturesPreprocessor, DupletsTripletsPreprocessor, MovingAvgPreProcessor, EWMAPreProcessor, RemoveIrrelevantFeaturesDataPreprocessor, DropTargetNADataPreprocessor, DTWKMeansPreprocessor, RemoveRecordsByStockDateIdPreprocessor, FarNearPriceFillNaPreprocessor
+from data_preprocessor.feature_engineering import BasicFeaturesPreprocessor, DupletsTripletsPreprocessor, MovingAvgPreProcessor, EWMAPreProcessor, RemoveIrrelevantFeaturesDataPreprocessor, DropTargetNADataPreprocessor, DTWKMeansPreprocessor, RemoveRecordsByStockDateIdPreprocessor, FarNearPriceFillNaPreprocessor, MovingAvgFillNaPreprocessor
 from data_preprocessor.polynomial_features import PolynomialFeaturesPreProcessor
 from data_preprocessor.stockid_features import StockIdFeaturesPreProcessor
 from data_preprocessor.deep_feature_synthesis import DfsPreProcessor
@@ -57,8 +57,8 @@ processors = [
     FarNearPriceFillNaPreprocessor(),
     # BasicFeaturesPreprocessor(),
     # DupletsTripletsPreprocessor(),
-    # MovingAvgPreProcessor("wap"),
-    # MovingAvgFillNaPreprocessor("wap", 1.0),
+    MovingAvgPreProcessor("wap"),
+    MovingAvgFillNaPreprocessor("wap", 1.0),
     # StockIdFeaturesPreProcessor(),   
     # DTWKMeansPreprocessor(),
     # DfsPreProcessor(),
