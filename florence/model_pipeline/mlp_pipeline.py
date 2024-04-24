@@ -105,7 +105,7 @@ class MLPModelPipeline(ModelPipeline):
 
     def get_static_params(self):
         return {
-            'epochs': 3,
+            'epochs': 10,
             'batch_size': 256,
         }
 
