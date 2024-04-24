@@ -1,6 +1,8 @@
 import numpy as np
 from sklearn.model_selection import TimeSeriesSplit
 from sklearn import preprocessing
+from utils.number_utils import NumberUtils
+
 
 class TrainEvalDataGenerator:
     def generate(self, df_train):
@@ -61,18 +63,20 @@ class TimeSeriesLastFoldDataGenerator(TrainEvalDataGenerator):
         eval = eval_dfs[-1]
 
         if self.normalize:
-            normalize_columns = [
-                "imbalance_size",
-                "matched_size",
-                "bid_size",
-                "ask_size",
-            ]
-            normalize_columns = list(normalize_columns.intersection(set(train.columns)))
+            NumberUtils.normalize_data(train)
+            NumberUtils.normalize_data(eval)
+            # normalize_columns = set([
+            #     "imbalance_size",
+            #     "matched_size",
+            #     "bid_size",
+            #     "ask_size",
+            # ])
+            # normalize_columns = list(normalize_columns.intersection(set(train.columns)))
 
-            scaler = preprocessing.StandardScaler()
-            scaler.fit(train[normalize_columns])
-            train[normalize_columns] = scaler.transform(train[normalize_columns])
-            eval[normalize_columns] = scaler.transform(eval[normalize_columns])
+            # scaler = preprocessing.StandardScaler()
+            # scaler.fit(train[normalize_columns])
+            # train[normalize_columns] = scaler.transform(train[normalize_columns])
+            # eval[normalize_columns] = scaler.transform(eval[normalize_columns])
 
         return [train], [eval], 1
     
