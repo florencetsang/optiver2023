@@ -1,7 +1,6 @@
 import lightgbm as lgb
 from model_pipeline.model_pipeline import ModelPipeline, ModelPipelineFactory
 
-
 class LGBModelPipeline(ModelPipeline):
     def __init__(self):
         super().__init__()
@@ -42,23 +41,31 @@ class LGBModelPipeline(ModelPipeline):
         selected_params_for_model_name = ['learning_rate', 'max_depth', 'n_estimators']
         return "_".join([f"{param_n}_{params[param_n]}" for param_n in selected_params_for_model_name])
 
-    def get_hyper_params(self, trial):
+    def get_static_params(self):
         return {
-            'learning_rate': trial.suggest_float('learning_rate', 0.005, 0.2, log=True),
-            'max_depth': trial.suggest_int('max_depth', 4, 12),
-            'n_estimators': trial.suggest_int('n_estimators', 100, 5000, step=100),
-            'reg_alpha': trial.suggest_float('reg_alpha', 1e-4, 10.0, log=True),
-            'reg_lambda': trial.suggest_float('reg_lambda', 1e-4, 10.0, log=True),
-            'colsample_bytree': trial.suggest_float('colsample_bytree', 0.3, 1.0),
-            'subsample': trial.suggest_float('subsample', 0.5, 1.0),
-            'num_leaves': trial.suggest_int('num_leaves', 31, 512),
-            'min_child_samples': trial.suggest_int('min_child_samples', 1, 100),
-            # 'cat_smooth': trial.suggest_int('cat_smooth', 1, 100),
             'objective': 'regression_l1',
             'random_state': 42,
             'force_col_wise': True,
             "verbosity": -1,
         }
+
+    def get_hyper_params(self, trial):
+        hyper_params_dict = self.get_static_params()
+        hyper_params_dict.update(
+            {
+                'learning_rate': trial.suggest_float('learning_rate', 0.005, 0.2, log=True),
+                'max_depth': trial.suggest_int('max_depth', 4, 12),
+                'n_estimators': trial.suggest_int('n_estimators', 100, 1000, step=100),
+                'reg_alpha': trial.suggest_float('reg_alpha', 1e-4, 10.0, log=True),
+                'reg_lambda': trial.suggest_float('reg_lambda', 1e-4, 10.0, log=True),
+                'colsample_bytree': trial.suggest_float('colsample_bytree', 0.3, 1.0),
+                'subsample': trial.suggest_float('subsample', 0.5, 1.0),
+                'num_leaves': trial.suggest_int('num_leaves', 31, 512),
+                'min_child_samples': trial.suggest_int('min_child_samples', 1, 100),
+                # # 'cat_smooth': trial.suggest_int('cat_smooth', 1, 100),
+            }
+        )
+        return hyper_params_dict
 
 class LGBModelPipelineFactory(ModelPipelineFactory):
     def create_model_pipeline(self) -> ModelPipeline:

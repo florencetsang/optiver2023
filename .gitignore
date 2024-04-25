@@ -2,6 +2,11 @@ __pycache__/
 **/__pycache__/
 **/.ipynb_checkpoints/
 
+.ipynb_checkpoints/
+**/.ipynb_checkpoints/
+
+**/lightning_logs/
+
 optiver-trading-at-the-close/
 .conda/
 
@@ -11,3 +16,6 @@ florence/best_models
 florence/florence_temp
 florence/**/*.pkl
 florence/logs
+florence/transformer_encoder_checkpoints
+
+.virtual_documents/

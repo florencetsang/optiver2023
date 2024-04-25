@@ -1,3 +1,4 @@
+from os import path
 import joblib
 
 class ModelPostProcessor:
@@ -21,3 +22,13 @@ class SaveModelPostProcessor(ModelPostProcessor):
     def process(self, model, model_pipeline, fold):
         if model is not None:
             joblib.dump(model, f'{self.save_dir}/{model_pipeline.get_name()}_{fold}.model')
+
+class KerasSaveModelPostProcessor(ModelPostProcessor):
+    def __init__(self, save_dir='./models/') -> None:
+        super().__init__()
+        self.save_dir = save_dir
+    
+    def process(self, model, model_pipeline, fold):
+        if model is not None:
+            save_path = path.join(self.save_dir, f'{model_pipeline.get_name()}_{fold}.keras')
+            model.save(save_path)
