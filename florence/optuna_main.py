@@ -87,7 +87,7 @@ print(df_train.columns)
 
 default_data_generator = DefaultTrainEvalDataGenerator()
 k_fold_data_generator = ManualKFoldDataGenerator(n_fold=N_fold)
-time_series_k_fold_data_generator = TimeSeriesKFoldDataGenerator(n_fold=N_fold, test_set_ratio=0.1)
+time_series_k_fold_data_generator = TimeSeriesKFoldDataGenerator(n_fold=N_fold, test_set_ratio=0.05)
 last_fold_data_generator = TimeSeriesLastFoldDataGenerator(test_set_ratio=0.1, normalize=True)
 
 model_post_processor = CompositeModelPostProcessor([
