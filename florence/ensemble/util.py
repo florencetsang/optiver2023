@@ -9,10 +9,10 @@ import numpy as np
 from load_data import load_data_from_csv
 import joblib
 
-from data_preprocessor.feature_engineering import BasicFeaturesPreprocessor, DupletsTripletsPreprocessor, MovingAvgPreProcessor, RemoveIrrelevantFeaturesDataPreprocessor, DropTargetNADataPreprocessor, DTWKMeansPreprocessor
 from data_preprocessor.data_preprocessor import CompositeDataPreprocessor, ReduceMemUsageDataPreprocessor, FillNaPreProcessor
+from data_preprocessor.feature_engineering import BasicFeaturesPreprocessor, DupletsTripletsPreprocessor, MovingAvgPreProcessor, EWMAPreProcessor, RemoveIrrelevantFeaturesDataPreprocessor, DropTargetNADataPreprocessor, DTWKMeansPreprocessor, RemoveRecordsByStockDateIdPreprocessor, FarNearPriceFillNaPreprocessor, MovingAvgFillNaPreprocessor
 
-
+from model_pipeline.model_pipeline import ModelPipeline
 
 import os
 
@@ -26,16 +26,53 @@ import os
 # ]
 # test_processors = CompositeDataPreprocessor(test_processors)
 # DATA_PATH = '/kaggle/input'
-DATA_PATH = '../..'
-df_train, df_test, revealed_targets, sample_submission = load_data_from_csv(DATA_PATH)
-# df_test = test_processors.apply(df_test)
-lgb_model = joblib.load('../best_models/best_model_2023_02_19')
+def prep_data():
+    DATA_PATH = '../..'
+    df_train, df_val, df_test, revealed_targets, sample_submission = load_data_from_csv(DATA_PATH)
 
-# lgb_model = joblib.load('Best_model_pool/best_model_learning_rate_0.08210417223377245_n_estimators_2900_20240301_raw')
+    processors = [
+        ReduceMemUsageDataPreprocessor(verbose=True),
+        RemoveRecordsByStockDateIdPreprocessor([
+            {"stock_id": 19, "date_id": 438},
+            {"stock_id": 101, "date_id": 328},
+            {"stock_id": 131, "date_id": 35},
+            {"stock_id": 158, "date_id": 388},
+        ]),
+        FarNearPriceFillNaPreprocessor(),
+        # BasicFeaturesPreprocessor(),
+        # DupletsTripletsPreprocessor(),
+        MovingAvgPreProcessor("wap"),
+        MovingAvgFillNaPreprocessor("wap", 1.0),
+        # StockIdFeaturesPreProcessor(),
+        # DTWKMeansPreprocessor(),
+        # DfsPreProcessor(),
+        # DropTargetNADataPreprocessor(),
+        RemoveIrrelevantFeaturesDataPreprocessor(['stock_id', 'date_id', 'time_id', 'row_id']),
+        # FillNaPreProcessor(1.0),
+        # PolynomialFeaturesPreProcessor(),
+    ]
+
+    processor = CompositeDataPreprocessor(processors)
+
+    f_train = processor.apply(df_train)
+    print(f"run pre-processors - applied on df_train")
+    df_val = processor.apply(df_val)
+
+    model_pipeline = ModelPipeline()
+    X_train_fold, y_train_fold, X_val_fold, y_val_fold = model_pipeline.create_XY(df_train, df_val)
+    return X_train_fold[5000:6000], y_train_fold[5000:6000], X_val_fold[5000:6000], y_val_fold[5000:6000]
+
+X_train_fold, y_train_fold, X_val_fold, y_val_fold = prep_data()
+# df_test = test_processors.apply(df_test)
+# lgb_model = joblib.load('../best_models/best_model_2023_02_19')
+
+lgb_model = joblib.load('Best_model_pool/best_model_learning_rate_0.08210417223377245_n_estimators_2900_20240301_raw')
+# lgb_model_2 = joblib.load('Best_model_pool/best_model_learning_rate_0.031704814284616786_n_estimators_1800_20240302_raw_duplets_triplets2')
+
 # os.environ["KERAS_BACKEND"] = "tensorflow"
 # from keras_core.models import load_model
 from keras.models import load_model
-mlp_model = load_model('Best_model_pool/mlp_4.keras')
+mlp_model = load_model('ensemble_models/mlp_None_20240423_mlp_moving_avg.keras')
 
 estimators = [
     ('lgb', lgb_model),
@@ -49,6 +86,8 @@ stacking_regressor = StackingRegressor(
     estimators=estimators,
     final_estimator=final_estimator
 )
+# stacking_regressor.fit(X_train_fold, y_train_fold).score(X_val_fold, y_val_fold)
+# stacking_regressor = stacking_regressor.fit(X_train_fold, y_train_fold)
 
 import time
 
@@ -67,11 +106,11 @@ for ax, (name, est) in zip(
 
     start_time = time.time()
     scores = cross_validate(
-        est, X, y, scoring=list(scorers.values()), n_jobs=-1, verbose=0
+        est, X_val_fold, y_val_fold, scoring=list(scorers.values()), n_jobs=-1, verbose=0
     )
-    elapsed_time = time.time() - start_time
 
-    y_pred = cross_val_predict(est, X, y, n_jobs=-1, verbose=0)
+
+    y_pred = cross_val_predict(est, X_val_fold, y_val_fold, n_jobs=-1, verbose=0)
     scores = {
         key: (
             f"{np.abs(np.mean(scores[f'test_{value}'])):.2f} +- "
@@ -79,9 +118,11 @@ for ax, (name, est) in zip(
         )
         for key, value in scorers.items()
     }
+    # y_pred = est.predict(X_val_fold, y_val_fold, n_jobs=-1, verbose=0)
+    elapsed_time = time.time() - start_time
 
     display = PredictionErrorDisplay.from_predictions(
-        y_true=y,
+        y_true=y_val_fold,
         y_pred=y_pred,
         kind="actual_vs_predicted",
         ax=ax,
@@ -97,4 +138,4 @@ for ax, (name, est) in zip(
 plt.suptitle("Single predictors versus stacked predictors")
 plt.tight_layout()
 plt.subplots_adjust(top=0.9)
-plt.show()
+plt.savefig(f'../img/ensemble_chart.jpg')
