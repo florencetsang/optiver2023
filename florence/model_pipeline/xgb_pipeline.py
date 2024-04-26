@@ -46,9 +46,6 @@ class XGBModelPipeline(ModelPipeline):
             "objective": "reg:absoluteerror",
             # use exact for small dataset.
             "early_stopping_rounds": 100,
-            # defines booster, gblinear for linear functions.
-            # sampling according to each tree.
-            "colsample_bytree": trial.suggest_float("colsample_bytree", 0.2, 1.0),
             "random_state": 42,
             "device": "cuda"
         }
