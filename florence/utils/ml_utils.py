@@ -5,3 +5,30 @@ class MLUtils:
         x = df[features].values
         y = df[target_col_name].values
         return x, y
+
+class ModelLogger:
+    def log(self, msg):
+        pass
+    
+    def reset(self):
+        pass
+
+class BasicModelLogger(ModelLogger):
+    def __init__(self, msg_prefix):
+        self.msg_prefix = msg_prefix
+        # self.log_idx = 0
+    
+    def log(self, msg):
+        print(f"{self.msg_prefix} - {msg}")
+        # self.log_idx += 1
+    
+    def reset(self):
+        # self.log_idx = 0
+        pass
+
+class NoopModelLogger(ModelLogger):
+    def log(self, msg):
+        pass
+    
+    def reset(self):
+        pass
