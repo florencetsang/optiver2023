@@ -17,7 +17,12 @@ class MLPModelPipeline(ModelPipeline):
         [64,64,64],
         [128,64,32],
         [64,32,16],
-        [64,128,64],
+        [64,128,64],        
+        # [64],
+        # [128],
+        # [256],
+        # [512],
+        # [1024],
     ]
 
     def __init__(self, model_id, plot_path, num_features=12):
