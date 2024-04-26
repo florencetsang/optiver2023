@@ -28,21 +28,27 @@ class BasicFeaturesPreprocessor(DataPreprocessor):
         return df_
     
 class DupletsTripletsPreprocessor(DataPreprocessor):
+    def __init__(self, enable_duplets=True, enable_triplets=True):
+        super().__init__()
+        self.enable_duplets = enable_duplets
+        self.enable_triplets = enable_triplets
 
     def apply(self, df):
 
         prices = ['reference_price','far_price', 'near_price', 'ask_price', 'bid_price', 'wap']
         df_ = df.copy()
 
-        for c in combinations(prices, 2):
-            df_[f"{c[0]}_{c[1]}_imb"] = df.eval(f"({c[0]} - {c[1]})/({c[0]} + {c[1]})")
+        if self.enable_duplets:
+            for c in combinations(prices, 2):
+                df_[f"{c[0]}_{c[1]}_imb"] = df.eval(f"({c[0]} - {c[1]})/({c[0]} + {c[1]})")
 
-        for a, b, c in combinations( ['reference_price', 'ask_price', 'bid_price', 'wap'], 3):
-            maxi = df_[[a,b,c]].max(axis=1)
-            mini = df_[[a,b,c]].min(axis=1)
-            mid = df_[[a,b,c]].sum(axis=1)-mini-maxi
+        if self.enable_triplets:
+            for a, b, c in combinations( ['reference_price', 'ask_price', 'bid_price', 'wap'], 3):
+                maxi = df_[[a,b,c]].max(axis=1)
+                mini = df_[[a,b,c]].min(axis=1)
+                mid = df_[[a,b,c]].sum(axis=1)-mini-maxi
 
-            df_[f'{a}_{b}_{c}_imb2'] = np.where(mid.eq(mini), np.nan, (maxi - mid) / (mid - mini))
+                df_[f'{a}_{b}_{c}_imb2'] = np.where(mid.eq(mini), np.nan, (maxi - mid) / (mid - mini))
 
         return df_
 
