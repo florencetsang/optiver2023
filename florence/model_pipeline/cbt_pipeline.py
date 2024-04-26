@@ -40,6 +40,7 @@ class CatBoostModelPipeline(ModelPipeline):
     def get_static_params(self):
         return {
             'random_state': 42,
+            "task_type": "GPU"
         }
 
     def get_hyper_params(self, trial):
