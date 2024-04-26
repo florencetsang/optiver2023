@@ -6,6 +6,7 @@ __pycache__/
 **/.ipynb_checkpoints/
 
 **/lightning_logs/
+**/transformer_encoder_by_time_checkpoints/
 
 optiver-trading-at-the-close/
 .conda/
