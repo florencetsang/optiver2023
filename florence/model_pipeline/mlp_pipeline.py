@@ -31,6 +31,9 @@ class MLPModelPipeline(ModelPipeline):
         self.plot_path = plot_path
         self.num_features = num_features
 
+    def init_model_metadata(self, metadata):
+        self.num_features = metadata["num_features"]
+
     def init_model(self, param: dict = None, fold=9999):
         # init a new model + reset stateful params
         self.reset()
