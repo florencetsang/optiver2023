@@ -34,6 +34,9 @@ class DefaultOptunaTrainPipeline():
         self.callbacks = callbacks
         self.num_trials = num_trials
 
+        # TODO: save transformers (e.g. sklearn scaler, auto feature engineering) states in memory temporarily, move to file-based storage in the future
+        self.final_data_transformer_configs = None
+
     def plot_feature_importance(self, lgbm_model, df_train, save_name):
         # feature importance
         import matplotlib.pyplot as plt
@@ -135,6 +138,7 @@ class DefaultOptunaTrainPipeline():
                 X_train_fold, y_train_fold, X_val_fold, y_val_fold = self.model_pipeline.create_XY(train_dfs[fold_index], eval_dfs[fold_index])
 
                 # create the LightGBM regressor with the optimized parameters
+                self.model_pipeline.init_model_metadata({"num_features": X_train_fold.shape[1]})
                 self.model_pipeline.init_model(param=param)
                 print(f"fold {fold_index+1}/{num_folds} - initialized params")
                 # Train the model on the training set
@@ -208,15 +212,20 @@ class DefaultOptunaTrainPipeline():
 
         return best_param
 
-    def train_with_param(self, df_train, params, model_name, model_type):
+    def train_with_param(self, df_train, df_val, params, model_name, model_type):
         print(f"Start training with params: {params}.")
         tic = time.perf_counter() # Start Time
-        train_dfs, eval_dfs, num_train_eval_sets = self.train_eval_data_generator.generate(df_train)
+        # train_dfs, eval_dfs, num_train_eval_sets = self.train_eval_data_generator.generate(df_train)
         # pick last training testing pair
-        train_dfs, eval_dfs = train_dfs[-1], eval_dfs[-1]
+        # train_dfs, eval_dfs = train_dfs[-1], eval_dfs[-1]
+
+        if self.train_eval_data_generator.has_transformations():
+            df_train = self.train_eval_data_generator.transform_pipeline.fit_transform(df_train)
+            df_val = self.train_eval_data_generator.transform_pipeline.transform(df_val)
 
         # Fit the model to the training data
-        X_train_fold, y_train_fold, X_val_fold, y_val_fold = self.model_pipeline.create_XY(train_dfs, eval_dfs)
+        X_train_fold, y_train_fold, X_val_fold, y_val_fold = self.model_pipeline.create_XY(df_train, df_val)
+        self.model_pipeline.init_model_metadata({"num_features": X_train_fold.shape[1]})
         self.model_pipeline.init_model(param=params)
         self.model_pipeline.train(X_train_fold, y_train_fold, X_val_fold, y_val_fold, {})
 
@@ -232,12 +241,17 @@ class DefaultOptunaTrainPipeline():
 
         toc = time.perf_counter() # End Time
         print(f"Finished training with params. Took {(toc-tic):.2f}s.")
-        return self.model_pipeline.model, train_dfs, eval_dfs, save_path
+        return self.model_pipeline.model, df_train, df_val, save_path
 
-    def load_model_eval(self, df_train, model_name, save_path, model_type, shap_data_size=0.01):
-        train_dfs, eval_dfs, num_train_eval_sets = self.train_eval_data_generator.generate(df_train)
+    def load_model_eval(self, df_train, df_val, model_name, save_path, model_type, shap_data_size=0.01):
+        # train_dfs, eval_dfs, num_train_eval_sets = self.train_eval_data_generator.generate(df_train)
         # pick last training testing pair for feature eval
-        last_train_dfs, last_eval_dfs = train_dfs[-1], eval_dfs[-1]
+        last_train_dfs, last_eval_dfs = df_train, df_val
+
+        if self.train_eval_data_generator.has_transformations():
+            last_train_dfs = self.train_eval_data_generator.transform_pipeline.transform(last_train_dfs)
+            last_eval_dfs = self.train_eval_data_generator.transform_pipeline.transform(last_eval_dfs)
+        
         model = None
         if model_type=="mlp":
             model = keras.models.load_model(save_path)
@@ -246,5 +260,4 @@ class DefaultOptunaTrainPipeline():
             self.plot_feature_importance(model, last_eval_dfs, model_name)
             self.plot_shap(model, last_train_dfs, last_eval_dfs, model_name, shap_data_size)
 
-        return model, train_dfs, eval_dfs
-
+        return model, last_train_dfs, last_eval_dfs

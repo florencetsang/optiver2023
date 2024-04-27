@@ -3,10 +3,11 @@ import argparse
 from load_data import load_data_from_csv
 from data_preprocessor.data_preprocessor import CompositeDataPreprocessor, ReduceMemUsageDataPreprocessor, FillNaPreProcessor
 
-from data_preprocessor.feature_engineering import BasicFeaturesPreprocessor, DupletsTripletsPreprocessor, MovingAvgPreProcessor, EWMAPreProcessor, RemoveIrrelevantFeaturesDataPreprocessor, DropTargetNADataPreprocessor, DTWKMeansPreprocessor, RemoveRecordsByStockDateIdPreprocessor, FarNearPriceFillNaPreprocessor, MovingAvgFillNaPreprocessor
+from data_preprocessor.feature_engineering import BasicFeaturesPreprocessor, DupletsTripletsPreprocessor, MovingAvgPreProcessor, EWMAPreProcessor, RemoveIrrelevantFeaturesDataPreprocessor, DropTargetNADataPreprocessor, DTWKMeansPreprocessor, RemoveRecordsByStockDateIdPreprocessor, FarNearPriceFillNaPreprocessor, MovingAvgFillNaPreprocessor, EWMAFillNaPreprocessor, RemoveIrrelevantFeaturesDataTransformer
 from data_preprocessor.polynomial_features import PolynomialFeaturesPreProcessor
 from data_preprocessor.stockid_features import StockIdFeaturesPreProcessor
-from data_preprocessor.deep_feature_synthesis import DfsPreProcessor, StockDateIdPreprocessor, FeatureToolsDFSPreprocessor
+from data_preprocessor.deep_feature_synthesis import DfsPreProcessor, StockDateIdPreprocessor, FeatureToolsDFSTransformer
+from data_preprocessor.normalization import NormalizationDataTransformer
 from data_generator.data_generator import DefaultTrainEvalDataGenerator, ManualKFoldDataGenerator, TimeSeriesKFoldDataGenerator, TimeSeriesLastFoldDataGenerator
 
 from model_pipeline.lgb_pipeline import LGBModelPipelineFactory
@@ -28,6 +29,7 @@ import optuna.integration.lightgbm as lgb
 import optuna
 
 import numpy as np
+from sklearn.pipeline import make_pipeline
 
 import sys
 
@@ -59,13 +61,15 @@ processors = [
     # DupletsTripletsPreprocessor(),
     # MovingAvgPreProcessor("wap"),
     # MovingAvgFillNaPreprocessor("wap", 1.0),
+    # EWMAPreProcessor("wap", 5),
+    # EWMAFillNaPreprocessor("wap", 1.0),
     # StockIdFeaturesPreProcessor(),   
     # DTWKMeansPreprocessor(),
     # DfsPreProcessor(),
     StockDateIdPreprocessor(), 
-    FeatureToolsDFSPreprocessor(),
+    # FeatureToolsDFSPreprocessor(),
     # DropTargetNADataPreprocessor(),    
-    RemoveIrrelevantFeaturesDataPreprocessor(['stock_id', 'date_id','time_id', 'row_id']),
+    # RemoveIrrelevantFeaturesDataPreprocessor(['stock_id', 'date_id','time_id', 'row_id']),
     # FillNaPreProcessor(1.0),
     # PolynomialFeaturesPreProcessor(),
 ]
@@ -90,7 +94,30 @@ print(df_train.columns)
 default_data_generator = DefaultTrainEvalDataGenerator()
 k_fold_data_generator = ManualKFoldDataGenerator(n_fold=N_fold)
 time_series_k_fold_data_generator = TimeSeriesKFoldDataGenerator(n_fold=N_fold, test_set_ratio=0.05)
-last_fold_data_generator = TimeSeriesLastFoldDataGenerator(test_set_ratio=0.1, normalize=True)
+
+last_fold_data_generator_transform_pipeline = make_pipeline(
+    FeatureToolsDFSTransformer(
+        group_by_stock=True,
+        group_by_date=False,
+        group_by_stock_date=False,
+    ),
+    NormalizationDataTransformer(
+        [
+            "imbalance_size",
+            "matched_size",
+            "bid_size",
+            "ask_size",
+        ],
+        "closing_movements",
+    ),
+    RemoveIrrelevantFeaturesDataTransformer(['stock_id', 'date_id','time_id', 'row_id', "stock_date_id"]),
+    verbose=True,
+)
+last_fold_data_generator = TimeSeriesLastFoldDataGenerator(
+    test_set_ratio=0.1,
+    use_optimized_last_fold=True,
+    transform_pipeline=last_fold_data_generator_transform_pipeline,
+)
 
 model_post_processor = CompositeModelPostProcessor([
     SaveModelPostProcessor(save_dir=model_save_dir)
@@ -128,21 +155,21 @@ best_param = optuna_pipeline.train(df_train)
 # )
 trained_models, train_dfs, eval_dfs, save_path = optuna_pipeline.train_with_param(
     df_train,
+    df_val,
     params=best_param,
     model_name = model_name,
     model_type = model_type
 )
 
 # load and eval model
-trained_models, train_dfs, eval_dfs = optuna_pipeline.load_model_eval(
+# include transformed df_train and df_val (e.g. mlp data scaler, auto feature engineering)
+trained_models, df_train, df_val = optuna_pipeline.load_model_eval(
     df_train,
+    df_val,
     model_name,
     save_path,
     model_type = model_type
 )
-
-if model_type == 'mlp':
-    NumberUtils.normalize_data(df_val)
 
 model_avg_mae = ScoringUtils.calculate_mae([trained_models], [df_val])
 print(model_avg_mae)

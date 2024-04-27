@@ -1,5 +1,6 @@
 import numpy as np
 import pandas as pd
+from sklearn.base import TransformerMixin, BaseEstimator
 from itertools import combinations
 from data_preprocessor.data_preprocessor import DataPreprocessor
 from tslearn.metrics import dtw
@@ -115,6 +116,20 @@ class RemoveIrrelevantFeaturesDataPreprocessor(DataPreprocessor):
         processed_df = df[useful_features]
         return processed_df
 
+class RemoveIrrelevantFeaturesDataTransformer(TransformerMixin, BaseEstimator):
+    def __init__(self, non_features):
+        super().__init__()
+        self.non_features = non_features
+
+    def fit(self, X, y=None):
+        return self
+    
+    def transform(self, df):
+        print(f"RemoveIrrelevantFeaturesDataTransformer - removing {len(self.non_features)} features, {self.non_features}")
+        useful_features = [c for c in df.columns if c not in self.non_features]
+        processed_df = df[useful_features]
+        return processed_df
+
 class DropTargetNADataPreprocessor(DataPreprocessor):
     def __init__(self, target_col_name='target'):
         super().__init__()
@@ -150,6 +165,18 @@ class MovingAvgFillNaPreprocessor(DataPreprocessor):
     def apply(self, df):
         # TODO: other fillna logic?
         columns = df.columns[df.columns.str.startswith(f"{self.feature_name}_mov_avg")]
+        df[columns] = df[columns].fillna(self.fill_na_value)
+        return df
+
+class EWMAFillNaPreprocessor(DataPreprocessor):
+    def __init__(self, feature_name, fill_na_value):
+        super().__init__()
+        self.feature_name = feature_name
+        self.fill_na_value = fill_na_value
+    
+    def apply(self, df):
+        # TODO: other fillna logic?
+        columns = df.columns[df.columns.str.startswith(f"{self.feature_name}_ewma")]
         df[columns] = df[columns].fillna(self.fill_na_value)
         return df
 

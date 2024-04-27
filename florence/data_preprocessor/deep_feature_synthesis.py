@@ -1,15 +1,18 @@
 import numpy as np
 import pandas as pd
+from sklearn.base import TransformerMixin, BaseEstimator
 import featuretools as ft
 from data_preprocessor.data_preprocessor import DataPreprocessor
 from woodwork.logical_types import Categorical
+from utils.dataframe_utils import get_df_summary_str
 
 class StockDateIdPreprocessor(DataPreprocessor):
     def apply(self, df):
         df["stock_date_id"] = df["date_id"] * 1000 + df["stock_id"]
         return df
 
-class FeatureToolsDFSPreprocessor(DataPreprocessor):
+# https://scikit-learn.org/stable/modules/generated/sklearn.base.TransformerMixin.html#sklearn.base.TransformerMixin
+class FeatureToolsDFSTransformer(TransformerMixin, BaseEstimator):
     def __init__(self, group_by_stock=True, group_by_date=True, group_by_stock_date=True):
         self.group_by_stock = group_by_stock
         self.group_by_date = group_by_date
@@ -19,7 +22,28 @@ class FeatureToolsDFSPreprocessor(DataPreprocessor):
         self.default_agg_primitives =  ["sum", "std", "max", "skew", "min", "mean"]
         self.default_trans_primitives =  ["day", "year", "month", "weekday", "haversine", "numwords", "characters"]
 
-    def apply(self, df):
+        self.feature_matrix_stock = None
+        self.feature_matrix_date = None
+        self.feature_matrix_stock_date = None
+
+    def transform(self, df):
+        print(f"FeatureToolsDFSTransformer - before dfs - df: {get_df_summary_str(df)}")
+        if self.group_by_stock:
+            assert self.feature_matrix_stock is not None
+            df = df.merge(self.feature_matrix_stock, left_on="stock_id", right_on="stock_id", how="left", suffixes=("dfs_stock_left", "dfs_stock_right"))
+            print(f"FeatureToolsDFSTransformer - dfs merge to df - group_by_stock - {get_df_summary_str(df)}")
+        if self.group_by_date:
+            assert self.feature_matrix_date is not None
+            df = df.merge(self.feature_matrix_date, left_on="date_id", right_on="date_id", how="left", suffixes=("dfs_date_left", "dfs_date_right"))
+            print(f"FeatureToolsDFSTransformer - dfs merge to df - group_by_date - {get_df_summary_str(df)}")
+        if self.group_by_stock_date:
+            assert self.feature_matrix_stock_date is not None
+            df = df.merge(self.feature_matrix_stock_date, left_on="stock_date_id", right_on="stock_date_id", how="left", suffixes=("dfs_stock_date_left", "dfs_stock_date_right"))
+            print(f"FeatureToolsDFSTransformer - dfs merge to df - group_by_stock_date - {get_df_summary_str(df)}")
+        print(f"FeatureToolsDFSTransformer - after dfs - df: {get_df_summary_str(df)}")
+        return df
+
+    def fit(self, df, y=None):
         df_ = df.copy(deep=True)
 
         es = ft.EntitySet(id = 'closing_movements_data')
@@ -36,22 +60,23 @@ class FeatureToolsDFSPreprocessor(DataPreprocessor):
             },
         )
 
-        print("dfs - normalize_dataframe - start")
+        print("FeatureToolsDFSTransformer - normalize_dataframe - start")
         if self.group_by_stock:
-            print("group_by_stock - normalize_dataframe")
+            print("FeatureToolsDFSTransformer - group_by_stock - normalize_dataframe")
             es.normalize_dataframe("closing_movements", "stocks", "stock_id")
         if self.group_by_date:
-            print("group_by_date - normalize_dataframe")
+            print("FeatureToolsDFSTransformer - group_by_date - normalize_dataframe")
             es.normalize_dataframe("closing_movements", "date_ids", "date_id")
         if self.group_by_stock_date:
-            print("group_by_stock_date - normalize_dataframe")
+            print("FeatureToolsDFSTransformer - group_by_stock_date - normalize_dataframe")
             es.normalize_dataframe("closing_movements", "stock_date_ids", "stock_date_id")
-        print("dfs - normalize_dataframe - end")
+        print("FeatureToolsDFSTransformer - normalize_dataframe - end")
 
-        print(f"dfs - es: {es}")
-        print(f"dfs - es closing_movements schema: {es['closing_movements'].ww.schema}")
+        print(f"FeatureToolsDFSTransformer - es: {es}")
+        print(f"FeatureToolsDFSTransformer - es closing_movements schema: {es['closing_movements'].ww.schema}")
 
-        print("dfs - generate features - start")
+        print("FeatureToolsDFSTransformer - generate features - start")
+        
         if self.group_by_stock:
             feature_matrix_stock, feature_defs_stock = ft.dfs(
                 entityset=es,
@@ -60,12 +85,14 @@ class FeatureToolsDFSPreprocessor(DataPreprocessor):
                 agg_primitives=self.default_agg_primitives,
                 max_depth=2,
                 verbose=True,
+                ignore_columns={"closing_movements": ["target"]},
             )
             self._print_feature_matrix(feature_matrix_stock, "feature_matrix_stock", "generate all features")
             feature_matrix_stock, feature_defs_stock = ft.selection.remove_single_value_features(feature_matrix_stock, features=feature_defs_stock)
             self._print_feature_matrix(feature_matrix_stock, "feature_matrix_stock", "remove_single_value_features")
             feature_matrix_stock, feature_defs_stock = ft.selection.remove_highly_correlated_features(feature_matrix_stock, features=feature_defs_stock)
             self._print_feature_matrix(feature_matrix_stock, "feature_matrix_stock", "remove_highly_correlated_features")
+            self.feature_matrix_stock = feature_matrix_stock
 
         if self.group_by_date:
             feature_matrix_date, feature_defs_date = ft.dfs(
@@ -75,12 +102,14 @@ class FeatureToolsDFSPreprocessor(DataPreprocessor):
                 agg_primitives=self.default_agg_primitives,
                 max_depth=2,
                 verbose=True,
+                ignore_columns={"closing_movements": ["target"]},
             )
             self._print_feature_matrix(feature_matrix_date, "feature_matrix_date", "generate all features")
             feature_matrix_date, feature_defs_date = ft.selection.remove_single_value_features(feature_matrix_date, features=feature_defs_date)
             self._print_feature_matrix(feature_matrix_date, "feature_matrix_date", "remove_single_value_features")
             feature_matrix_date, feature_defs_date = ft.selection.remove_highly_correlated_features(feature_matrix_date, features=feature_defs_date)
             self._print_feature_matrix(feature_matrix_date, "feature_matrix_date", "remove_highly_correlated_features")
+            self.feature_matrix_date = feature_matrix_date
 
         if self.group_by_stock_date:
             feature_matrix_stock_date, feature_defs_stock_date = ft.dfs(
@@ -90,30 +119,20 @@ class FeatureToolsDFSPreprocessor(DataPreprocessor):
                 agg_primitives=self.default_agg_primitives,
                 max_depth=2,
                 verbose=True,
+                ignore_columns={"closing_movements": ["target"]},
             )
             self._print_feature_matrix(feature_matrix_stock_date, "feature_matrix_stock_date", "generate all features")
             feature_matrix_stock_date, feature_defs_stock_date = ft.selection.remove_single_value_features(feature_matrix_stock_date, features=feature_defs_stock_date)
             self._print_feature_matrix(feature_matrix_stock_date, "feature_matrix_stock_date", "remove_single_value_features")
             feature_matrix_stock_date, feature_defs_stock_date = ft.selection.remove_highly_correlated_features(feature_matrix_stock_date, features=feature_defs_stock_date)
             self._print_feature_matrix(feature_matrix_stock_date, "feature_matrix_stock_date", "remove_highly_correlated_features")
-        print("dfs - generate features - start")
-
-        print(f"before dfs - shape: {df_}, memory usage: {df_.memory_usage(index=True).sum() / 1024 / 1024}")
-        if self.group_by_stock:
-            df_ = df_.merge(feature_matrix_stock, left_on="stock_id", right_on="stock_id", how="left", suffixes=("dfs_stock_left", "dfs_stock_right"))
-            print(f"dfs merge to df - group_by_stock - {df_}")
-        if self.group_by_date:
-            df_ = df_.merge(feature_matrix_date, left_on="date_id", right_on="date_id", how="left", suffixes=("dfs_date_left", "dfs_date_right"))
-            print(f"dfs merge to df - group_by_date - {df_}")
-        if self.group_by_stock_date:
-            df_ = df_.merge(feature_matrix_stock_date, left_on="stock_date_id", right_on="stock_date_id", how="left", suffixes=("dfs_stock_date_left", "dfs_stock_date_right"))
-            print(f"dfs merge to df - group_by_stock_date - {df_}")
-        print(f"after dfs - shape: {df_}, memory usage: {df_.memory_usage(index=True).sum() / 1024 / 1024}")
-
-        return df_
+            self.feature_matrix_stock_date = group_by_stock_date
+        
+        print("FeatureToolsDFSTransformer - generate features - end")
+        return self
 
     def _print_feature_matrix(self, feature_matrix, name, step):
-        print(f"{name} - {step} - shape: {feature_matrix.shape}, memory usage: {feature_matrix.memory_usage(index=True).sum() / 1024 / 1024}")
+        print(f"{name} - {step} - shape: {feature_matrix.shape}, memory usage: {get_df_summary_str(feature_matrix)}")
 
 class DfsPreProcessor():
     def apply(self, df):

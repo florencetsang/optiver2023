@@ -3,6 +3,9 @@ from utils.ml_utils import MLUtils
 class ModelPipeline:
     model = None
 
+    def init_model_metadata(self, metadata):
+        pass
+    
     def init_model(self):
         pass
     
