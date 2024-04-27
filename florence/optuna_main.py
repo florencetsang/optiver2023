@@ -6,7 +6,7 @@ from data_preprocessor.data_preprocessor import CompositeDataPreprocessor, Reduc
 from data_preprocessor.feature_engineering import BasicFeaturesPreprocessor, DupletsTripletsPreprocessor, MovingAvgPreProcessor, EWMAPreProcessor, RemoveIrrelevantFeaturesDataPreprocessor, DropTargetNADataPreprocessor, DTWKMeansPreprocessor, RemoveRecordsByStockDateIdPreprocessor, FarNearPriceFillNaPreprocessor, MovingAvgFillNaPreprocessor
 from data_preprocessor.polynomial_features import PolynomialFeaturesPreProcessor
 from data_preprocessor.stockid_features import StockIdFeaturesPreProcessor
-from data_preprocessor.deep_feature_synthesis import DfsPreProcessor
+from data_preprocessor.deep_feature_synthesis import DfsPreProcessor, StockDateIdPreprocessor, FeatureToolsDFSPreprocessor
 from data_generator.data_generator import DefaultTrainEvalDataGenerator, ManualKFoldDataGenerator, TimeSeriesKFoldDataGenerator, TimeSeriesLastFoldDataGenerator
 
 from model_pipeline.lgb_pipeline import LGBModelPipelineFactory
@@ -57,11 +57,13 @@ processors = [
     FarNearPriceFillNaPreprocessor(),
     # BasicFeaturesPreprocessor(),
     # DupletsTripletsPreprocessor(),
-    MovingAvgPreProcessor("wap"),
-    MovingAvgFillNaPreprocessor("wap", 1.0),
+    # MovingAvgPreProcessor("wap"),
+    # MovingAvgFillNaPreprocessor("wap", 1.0),
     # StockIdFeaturesPreProcessor(),   
     # DTWKMeansPreprocessor(),
     # DfsPreProcessor(),
+    StockDateIdPreprocessor(), 
+    FeatureToolsDFSPreprocessor(),
     # DropTargetNADataPreprocessor(),    
     RemoveIrrelevantFeaturesDataPreprocessor(['stock_id', 'date_id','time_id', 'row_id']),
     # FillNaPreProcessor(1.0),
