@@ -106,28 +106,24 @@ class DTWKMeansPreprocessor(DataPreprocessor):
             inertias.append(model.inertia_)
         return inertias
     def data_manipulation(self, df):
+        
         df.set_index(['date_id', 'time_id', 'stock_id'], inplace=True)
-        df_unstacked = df.unstack(level='stock_id')
+        df_unstacked = df.unstack(level=['stock_id','date_id'])
         df_unstacked.columns = ['_'.join(map(str, col)).strip() for col in df_unstacked.columns.values]
         pivoted_df = df_unstacked.fillna(0)
         pivoted_df .reset_index(inplace=True)
+        pivoted_df['time_group'] = pivoted_df['time_id'] // 360
         relevant_columns = [col for col in pivoted_df.columns if col.startswith(self.target_col_name)]
         relevant_columns =relevant_columns
         pivoted_df = pivoted_df[relevant_columns]
+        relevant_columns += ['time_group'] 
         time_series_data = pivoted_df.to_numpy()
+
         return time_series_data
 
     def apply(self, df):
         print("DTWKMeansPreprocessor_start")
-        df.set_index(['date_id', 'time_id', 'stock_id'], inplace=True)
-        df_unstacked = df.unstack(level='stock_id')
-        df_unstacked.columns = ['_'.join(map(str, col)).strip() for col in df_unstacked.columns.values]
-        pivoted_df = df_unstacked.fillna(0)
-        pivoted_df .reset_index(inplace=True)
-        relevant_columns = [col for col in pivoted_df.columns if col.startswith(self.target_col_name)]
-        relevant_columns =relevant_columns
-        pivoted_df = pivoted_df[relevant_columns]
-        time_series_data = pivoted_df.to_numpy()
+        time_series_data = self.data_manipulation(df).to_numpy()
         labels = self.model.fit_predict(time_series_data)
         cluster_df = pd.DataFrame(labels, index=df_unstacked.index, columns=['cluster'])
         df.reset_index(inplace=True)
