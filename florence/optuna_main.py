@@ -5,7 +5,7 @@ from data_preprocessor.data_preprocessor import CompositeDataPreprocessor, Reduc
 
 from data_preprocessor.feature_engineering import BasicFeaturesPreprocessor, DupletsTripletsPreprocessor, MovingAvgPreProcessor, EWMAPreProcessor, RemoveIrrelevantFeaturesDataPreprocessor, DropTargetNADataPreprocessor, DTWKMeansPreprocessor, RemoveRecordsByStockDateIdPreprocessor, FarNearPriceFillNaPreprocessor, MovingAvgFillNaPreprocessor, EWMAFillNaPreprocessor, RemoveIrrelevantFeaturesDataTransformer
 from data_preprocessor.polynomial_features import PolynomialFeaturesPreProcessor
-from data_preprocessor.stockid_features import StockIdFeaturesPreProcessor
+from data_preprocessor.stockid_features import StockIdFeaturesPreProcessor, StockIdFeaturesDataTransformer
 from data_preprocessor.deep_feature_synthesis import DfsPreProcessor, StockDateIdPreprocessor, FeatureToolsDFSTransformer
 from data_preprocessor.normalization import NormalizationDataTransformer
 from data_generator.data_generator import DefaultTrainEvalDataGenerator, ManualKFoldDataGenerator, TimeSeriesKFoldDataGenerator, TimeSeriesLastFoldDataGenerator
@@ -69,7 +69,7 @@ processors = [
     # StockDateIdPreprocessor(), 
     # FeatureToolsDFSPreprocessor(),
     # DropTargetNADataPreprocessor(),    
-    RemoveIrrelevantFeaturesDataPreprocessor(['stock_id', 'date_id','time_id', 'row_id']),
+    # RemoveIrrelevantFeaturesDataPreprocessor(['stock_id', 'date_id','time_id', 'row_id']),
     # FillNaPreProcessor(1.0),
     # PolynomialFeaturesPreProcessor(),
 ]
@@ -82,6 +82,7 @@ df_train, df_val, df_test, revealed_targets, sample_submission = load_data_from_
 print(f"df details - df_train: {df_train.shape}, df_val: {df_val.shape}")
 print(df_train.columns)
 
+# run data preprocessors on df_train and df_val
 raw_data = df_train
 print(f"run pre-processors - start")
 df_train = processor.apply(df_train)
@@ -93,14 +94,30 @@ print(df_train.columns)
 
 default_data_generator = DefaultTrainEvalDataGenerator()
 k_fold_data_generator = ManualKFoldDataGenerator(n_fold=N_fold)
-time_series_k_fold_data_generator = TimeSeriesKFoldDataGenerator(n_fold=N_fold, test_set_ratio=0.05)
 
+# ---------- time series k fold - start ----------
+# ---------- time series k fold - choose sklearn fit-transform pipeline or none pipeline ----------
+time_series_k_fold_data_generator_transform_pipeline = make_pipeline(
+    StockIdFeaturesDataTransformer(),
+    RemoveIrrelevantFeaturesDataTransformer(['stock_id', 'date_id','time_id', 'row_id', "stock_date_id"]),
+)
+# time_series_k_fold_data_generator_transform_pipeline = None
+time_series_k_fold_data_generator = TimeSeriesKFoldDataGenerator(
+    n_fold=N_fold,
+    test_set_ratio=0.05,
+    transform_pipeline=time_series_k_fold_data_generator_transform_pipeline
+)
+# ---------- time series k fold - end ----------
+
+# ---------- time series last fold - start ----------
+# ---------- time series last fold - choose sklearn fit-transform pipeline or none pipeline ----------
 last_fold_data_generator_transform_pipeline = make_pipeline(
     # FeatureToolsDFSTransformer(
     #     group_by_stock=True,
     #     group_by_date=False,
     #     group_by_stock_date=False,
     # ),
+    StockIdFeaturesDataTransformer(),
     NormalizationDataTransformer(
         [
             "imbalance_size",
@@ -113,16 +130,19 @@ last_fold_data_generator_transform_pipeline = make_pipeline(
     # RemoveIrrelevantFeaturesDataTransformer(['stock_id', 'date_id','time_id', 'row_id', "stock_date_id"]),
     verbose=True,
 )
+# last_fold_data_generator_transform_pipeline = None
 last_fold_data_generator = TimeSeriesLastFoldDataGenerator(
     test_set_ratio=0.1,
     use_optimized_last_fold=True,
     transform_pipeline=last_fold_data_generator_transform_pipeline,
 )
+# ---------- time series last fold - end ----------
 
 model_post_processor = CompositeModelPostProcessor([
     SaveModelPostProcessor(save_dir=model_save_dir)
 ])
 
+# ---------- create optuna pipeline ----------
 optuna_pipeline = None
 if model_type == 'lgb':
     optuna_pipeline = DefaultOptunaTrainPipeline(LGBModelPipelineFactory(), time_series_k_fold_data_generator, model_post_processor, [MAECallback()])
