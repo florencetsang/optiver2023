@@ -101,7 +101,7 @@ time_series_k_fold_data_generator_transform_pipeline = make_pipeline(
     StockIdFeaturesDataTransformer(),
     RemoveIrrelevantFeaturesDataTransformer(['stock_id', 'date_id','time_id', 'row_id', "stock_date_id"]),
 )
-# time_series_k_fold_data_generator_transform_pipeline = None
+time_series_k_fold_data_generator_transform_pipeline = None
 time_series_k_fold_data_generator = TimeSeriesKFoldDataGenerator(
     n_fold=N_fold,
     test_set_ratio=0.05,
