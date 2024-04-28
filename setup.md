@@ -1,6 +1,6 @@
 # Environment setup guide
 
-## Get started with the environment - know how to run the notebook & make submissions on Kaggle. 
+## Get started with the environment - know how to run the notebook & make submissions on Kaggle. [Note: No longer need as we are no longer submitting to Kaggle due to compliance reasons]
 Be able to run these 2 notebooks and make the submissions
 - https://www.kaggle.com/code/sohier/optiver-2023-basic-submission-demo
 - https://www.kaggle.com/code/ravi20076/optiver-baseline-models
