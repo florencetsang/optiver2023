@@ -75,13 +75,17 @@ class TimeSeriesDataPreprocessor:
         return df_train_arr
 
 class ReduceMemUsageDataPreprocessor(DataPreprocessor):
-    def __init__(self, verbose=0):
+    def __init__(self, exclude_columns=[], verbose = False):
+        super().__init__()
+        self.exclude_columns = exclude_columns
         self.verbose = verbose
 
     def apply(self, df):
         start_mem = df.memory_usage().sum() / 1024**2
 
         for col in df.columns:
+            if col in self.exclude_columns:
+                continue
             col_type = df[col].dtype
 
             if col_type != object:
@@ -116,6 +120,12 @@ class ReduceMemUsageDataPreprocessor(DataPreprocessor):
         return df
 
 class FillNaPreProcessor(DataPreprocessor):
+
+    def __init__(self, value = 0.0):
+        super().__init__()
+        self.value = value
+
+
     def apply(self, df):
-       df = df.fillna(0.0)
+       df = df.fillna(self.value)
        return df

@@ -1,9 +1,11 @@
 from utils.ml_utils import MLUtils
 
-
 class ModelPipeline:
     model = None
 
+    def init_model_metadata(self, metadata):
+        pass
+    
     def init_model(self):
         pass
     
@@ -11,11 +13,17 @@ class ModelPipeline:
         train_X, train_Y, eval_X, eval_Y = self.create_XY(df_train, df_eval)
         res = self._train(train_X, train_Y, eval_X, eval_Y)
         return res
+
+    def post_train(self):
+        pass
     
     def create_XY(self, df_train, df_eval):
         train_X, train_Y = MLUtils.create_XY(df_train)
         eval_X, eval_Y = MLUtils.create_XY(df_eval)
         return train_X, train_Y, eval_X, eval_Y
+    
+    def eval_once(self, x, y):
+        return float('inf')
     
     def _train(self, train_X, train_Y, eval_X, eval_Y):
         return None
@@ -30,6 +38,9 @@ class ModelPipeline:
 
     def get_name(self):
         return "AbstractModelPipeline"
+
+    def get_static_params(self):
+        return None
 
     def get_hyper_params(self, trial):
         return None
