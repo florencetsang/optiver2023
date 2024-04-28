@@ -3,7 +3,7 @@ import argparse
 from load_data import load_data_from_csv
 from data_preprocessor.data_preprocessor import CompositeDataPreprocessor, ReduceMemUsageDataPreprocessor, FillNaPreProcessor
 
-from data_preprocessor.feature_engineering import BasicFeaturesPreprocessor, DupletsTripletsPreprocessor, MovingAvgPreProcessor, EWMAPreProcessor, RemoveIrrelevantFeaturesDataPreprocessor, DropTargetNADataPreprocessor, DTWKMeansPreprocessor, RemoveRecordsByStockDateIdPreprocessor, FarNearPriceFillNaPreprocessor, MovingAvgFillNaPreprocessor, EWMAFillNaPreprocessor, RemoveIrrelevantFeaturesDataTransformer
+from data_preprocessor.feature_engineering import BasicFeaturesPreprocessor, StocksPcaPreProcessor, DupletsTripletsPreprocessor, MovingAvgPreProcessor, EWMAPreProcessor, RemoveIrrelevantFeaturesDataPreprocessor, DropTargetNADataPreprocessor, DTWKMeansPreprocessor, RemoveRecordsByStockDateIdPreprocessor, FarNearPriceFillNaPreprocessor, MovingAvgFillNaPreprocessor, EWMAFillNaPreprocessor, RemoveIrrelevantFeaturesDataTransformer 
 from data_preprocessor.polynomial_features import PolynomialFeaturesPreProcessor
 from data_preprocessor.stockid_features import StockIdFeaturesPreProcessor
 from data_preprocessor.deep_feature_synthesis import DfsPreProcessor, StockDateIdPreprocessor, FeatureToolsDFSTransformer
@@ -58,6 +58,7 @@ processors = [
     ]),
     FarNearPriceFillNaPreprocessor(),
     # BasicFeaturesPreprocessor(),
+    StocksPcaPreProcessor(),
     # DupletsTripletsPreprocessor(),
     # MovingAvgPreProcessor("wap"),
     # MovingAvgFillNaPreprocessor("wap", 1.0),
@@ -81,6 +82,17 @@ DATA_PATH = '..'
 df_train, df_val, df_test, revealed_targets, sample_submission = load_data_from_csv(DATA_PATH)
 print(f"df details - df_train: {df_train.shape}, df_val: {df_val.shape}")
 print(df_train.columns)
+
+#to impose stocks PCA
+#from stocks_pca import StockClustering
+#clustering = StockClustering(df_train)
+#clustering.calculate_returns()
+#clustering.calculate_correlation_matrix()
+#clustering.perform_clustering(12)
+
+#stock_clusters = clustering.get_stock_clusters()
+
+#df_train= df_train.merge(stock_clusters, how='left', on='stock_id')
 
 raw_data = df_train
 print(f"run pre-processors - start")

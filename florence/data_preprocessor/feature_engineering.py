@@ -233,3 +233,16 @@ class DTWKMeansPreprocessor(DataPreprocessor):
 
         print("DTWKMeansPreprocessor_end")
         return processed_df
+
+
+class StocksPcaPreProcessor(DataPreprocessor):
+    def __init__(self):
+        super().__init__()
+
+    def apply(self, df):
+        stock_clusters = pd.read_csv('stock_clusters.csv')
+        print(stock_clusters)
+        print(df)
+        df = df.merge(stock_clusters, how='left', on='stock_id')
+        
+        return df
