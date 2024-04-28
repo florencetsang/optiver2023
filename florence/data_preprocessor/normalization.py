@@ -19,6 +19,8 @@ class NormalizationDataTransformer(TransformerMixin, BaseEstimator):
         return self
 
     def transform(self, df):
-        df[self.final_columns] = self.scaler.transform(df[self.final_columns])
+        # need to copy a new df, otherwise, it will modify the view and the underlying df
+        final_df = df.copy(deep=True)
+        final_df[self.final_columns] = self.scaler.transform(final_df[self.final_columns])
         print(f"NormalizationDataTransformer - transform - final_columns: {self.final_columns}")
-        return df
+        return final_df
