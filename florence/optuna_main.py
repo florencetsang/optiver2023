@@ -61,7 +61,7 @@ processors = [
     # DupletsTripletsPreprocessor(),
     # MovingAvgPreProcessor("wap"),
     # MovingAvgFillNaPreprocessor("wap", 1.0),
-    # EWMAPreProcessor("wap", 5),
+    # EWMAPreProcessor("wap", 10),
     # EWMAFillNaPreprocessor("wap", 1.0),
     # StockIdFeaturesPreProcessor(),   
     # DTWKMeansPreprocessor(),
