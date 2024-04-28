@@ -6,7 +6,8 @@ from load_data import load_data_from_csv
 # DATA_PATH = '/kaggle/input'
 DATA_PATH = '..'
 print("loading data")
-df_train, _, _, _ = load_data_from_csv(DATA_PATH, load_df_test=False, load_revealed_targets=False, load_sample_submission=False)
+result = load_data_from_csv(DATA_PATH)
+df_train, *_ = result
 print("loaded data")
 
 # 1. Compute returns for each stock for each day
