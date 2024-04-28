@@ -66,10 +66,10 @@ processors = [
     # StockIdFeaturesPreProcessor(),   
     # DTWKMeansPreprocessor(),
     # DfsPreProcessor(),
-    StockDateIdPreprocessor(), 
+    # StockDateIdPreprocessor(), 
     # FeatureToolsDFSPreprocessor(),
     # DropTargetNADataPreprocessor(),    
-    # RemoveIrrelevantFeaturesDataPreprocessor(['stock_id', 'date_id','time_id', 'row_id']),
+    RemoveIrrelevantFeaturesDataPreprocessor(['stock_id', 'date_id','time_id', 'row_id']),
     # FillNaPreProcessor(1.0),
     # PolynomialFeaturesPreProcessor(),
 ]
@@ -96,11 +96,11 @@ k_fold_data_generator = ManualKFoldDataGenerator(n_fold=N_fold)
 time_series_k_fold_data_generator = TimeSeriesKFoldDataGenerator(n_fold=N_fold, test_set_ratio=0.05)
 
 last_fold_data_generator_transform_pipeline = make_pipeline(
-    FeatureToolsDFSTransformer(
-        group_by_stock=True,
-        group_by_date=False,
-        group_by_stock_date=False,
-    ),
+    # FeatureToolsDFSTransformer(
+    #     group_by_stock=True,
+    #     group_by_date=False,
+    #     group_by_stock_date=False,
+    # ),
     NormalizationDataTransformer(
         [
             "imbalance_size",
@@ -110,7 +110,7 @@ last_fold_data_generator_transform_pipeline = make_pipeline(
         ],
         "closing_movements",
     ),
-    RemoveIrrelevantFeaturesDataTransformer(['stock_id', 'date_id','time_id', 'row_id', "stock_date_id"]),
+    # RemoveIrrelevantFeaturesDataTransformer(['stock_id', 'date_id','time_id', 'row_id', "stock_date_id"]),
     verbose=True,
 )
 last_fold_data_generator = TimeSeriesLastFoldDataGenerator(
