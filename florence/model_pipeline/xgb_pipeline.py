@@ -54,7 +54,8 @@ class XGBModelPipeline(ModelPipeline):
             {
                 'n_estimators': trial.suggest_int('n_estimators', 100, 1000, step=100),
                 'max_depth': trial.suggest_int('max_depth', 1, 10),
-                "booster": trial.suggest_categorical("booster", ["gbtree", "gblinear", "dart"]),
+                "booster": trial.suggest_categorical("booster", ["gbtree"]),
+                # "booster": trial.suggest_categorical("booster", ["gbtree", "gblinear", "dart"]),
                 # L2 regularization weight.
                 "reg_lambda": trial.suggest_float("reg_lambda", 1e-8, 1.0, log=True),
                 # L1 regularization weight.
