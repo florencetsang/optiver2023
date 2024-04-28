@@ -95,16 +95,13 @@ class EWMAPreProcessor(DataPreprocessor):
     def _calc_ewma(self, df):
         ewma_col_name = self._get_ewma_col_name()
         grouped_df = df.groupby(['stock_id', 'date_id'], as_index=False, sort=False)[self.feature_name]
-        ewma_df = grouped_df.ewm(span=self.span, min_periods=0).mean()
+        ewma_df = grouped_df.transform(lambda x: x.ewm(span=self.span, min_periods=0).mean())
+        # ewma_df = grouped_df.ewm(span=self.span, min_periods=0).mean()
         df[ewma_col_name] = ewma_df
         return df
     
     def apply(self, df):
         return self._calc_ewma(df)
-
-
-
-
 
 class RemoveIrrelevantFeaturesDataPreprocessor(DataPreprocessor):
     def __init__(self, non_features):
@@ -194,6 +191,7 @@ class RemoveRecordsByStockDateIdPreprocessor(DataPreprocessor):
         removed_records = df.shape[0] - final_df.shape[0]
         print(f"RemoveRecordsByStockDateIdPreprocessor - removing {removed_records} records")
         return final_df
+        
 class DTWKMeansPreprocessor(DataPreprocessor):
 
     def __init__(self, n_clusters=3, target_col_name='wap'):
