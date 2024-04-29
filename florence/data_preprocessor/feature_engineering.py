@@ -1,5 +1,6 @@
 import numpy as np
 import pandas as pd
+from sklearn.base import TransformerMixin, BaseEstimator
 from itertools import combinations
 from data_preprocessor.data_preprocessor import DataPreprocessor
 from tslearn.metrics import dtw
@@ -28,21 +29,27 @@ class BasicFeaturesPreprocessor(DataPreprocessor):
         return df_
     
 class DupletsTripletsPreprocessor(DataPreprocessor):
+    def __init__(self, enable_duplets=True, enable_triplets=True):
+        super().__init__()
+        self.enable_duplets = enable_duplets
+        self.enable_triplets = enable_triplets
 
     def apply(self, df):
 
         prices = ['reference_price','far_price', 'near_price', 'ask_price', 'bid_price', 'wap']
         df_ = df.copy()
 
-        for c in combinations(prices, 2):
-            df_[f"{c[0]}_{c[1]}_imb"] = df.eval(f"({c[0]} - {c[1]})/({c[0]} + {c[1]})")
+        if self.enable_duplets:
+            for c in combinations(prices, 2):
+                df_[f"{c[0]}_{c[1]}_imb"] = df.eval(f"({c[0]} - {c[1]})/({c[0]} + {c[1]})")
 
-        for a, b, c in combinations( ['reference_price', 'ask_price', 'bid_price', 'wap'], 3):
-            maxi = df_[[a,b,c]].max(axis=1)
-            mini = df_[[a,b,c]].min(axis=1)
-            mid = df_[[a,b,c]].sum(axis=1)-mini-maxi
+        if self.enable_triplets:
+            for a, b, c in combinations( ['reference_price', 'ask_price', 'bid_price', 'wap'], 3):
+                maxi = df_[[a,b,c]].max(axis=1)
+                mini = df_[[a,b,c]].min(axis=1)
+                mid = df_[[a,b,c]].sum(axis=1)-mini-maxi
 
-            df_[f'{a}_{b}_{c}_imb2'] = np.where(mid.eq(mini), np.nan, (maxi - mid) / (mid - mini))
+                df_[f'{a}_{b}_{c}_imb2'] = np.where(mid.eq(mini), np.nan, (maxi - mid) / (mid - mini))
 
         return df_
 
@@ -88,16 +95,13 @@ class EWMAPreProcessor(DataPreprocessor):
     def _calc_ewma(self, df):
         ewma_col_name = self._get_ewma_col_name()
         grouped_df = df.groupby(['stock_id', 'date_id'], as_index=False, sort=False)[self.feature_name]
-        ewma_df = grouped_df.ewm(span=self.span, min_periods=0).mean()
+        ewma_df = grouped_df.transform(lambda x: x.ewm(span=self.span, min_periods=0).mean())
+        # ewma_df = grouped_df.ewm(span=self.span, min_periods=0).mean()
         df[ewma_col_name] = ewma_df
         return df
     
     def apply(self, df):
         return self._calc_ewma(df)
-
-
-
-
 
 class RemoveIrrelevantFeaturesDataPreprocessor(DataPreprocessor):
     def __init__(self, non_features):
@@ -105,6 +109,20 @@ class RemoveIrrelevantFeaturesDataPreprocessor(DataPreprocessor):
         self.non_features = non_features
     
     def apply(self, df):
+        useful_features = [c for c in df.columns if c not in self.non_features]
+        processed_df = df[useful_features]
+        return processed_df
+
+class RemoveIrrelevantFeaturesDataTransformer(TransformerMixin, BaseEstimator):
+    def __init__(self, non_features):
+        super().__init__()
+        self.non_features = non_features
+
+    def fit(self, X, y=None):
+        return self
+    
+    def transform(self, df):
+        print(f"RemoveIrrelevantFeaturesDataTransformer - removing {len(self.non_features)} features, {self.non_features}")
         useful_features = [c for c in df.columns if c not in self.non_features]
         processed_df = df[useful_features]
         return processed_df
@@ -147,6 +165,18 @@ class MovingAvgFillNaPreprocessor(DataPreprocessor):
         df[columns] = df[columns].fillna(self.fill_na_value)
         return df
 
+class EWMAFillNaPreprocessor(DataPreprocessor):
+    def __init__(self, feature_name, fill_na_value):
+        super().__init__()
+        self.feature_name = feature_name
+        self.fill_na_value = fill_na_value
+    
+    def apply(self, df):
+        # TODO: other fillna logic?
+        columns = df.columns[df.columns.str.startswith(f"{self.feature_name}_ewma")]
+        df[columns] = df[columns].fillna(self.fill_na_value)
+        return df
+
 class RemoveRecordsByStockDateIdPreprocessor(DataPreprocessor):
     def __init__(self, stock_date_keys):
         super().__init__()
@@ -161,29 +191,45 @@ class RemoveRecordsByStockDateIdPreprocessor(DataPreprocessor):
         removed_records = df.shape[0] - final_df.shape[0]
         print(f"RemoveRecordsByStockDateIdPreprocessor - removing {removed_records} records")
         return final_df
+        
 class DTWKMeansPreprocessor(DataPreprocessor):
 
-    def __init__(self, n_clusters=3, target_col_name='wap'):
+    def __init__(self, n_clusters=5, target_col_name='wap'):
         self.n_clusters = n_clusters
         self.target_col_name = target_col_name
         self.model = TimeSeriesKMeans(n_clusters=n_clusters, metric="dtw")
+    def fit(self, time_series_data, max_clusters=10):
+        inertias = []
+        for n_clusters in range(1, max_clusters + 1):
+            model = TimeSeriesKMeans(n_clusters=n_clusters, metric="dtw")
+            model.fit(time_series_data)
+            inertias.append(model.inertia_)
+        return inertias
+    def data_manipulation(self, df):
         
-    def apply(self, df):
-        print("DTWKMeansPreprocessor_start")
         df.set_index(['date_id', 'time_id', 'stock_id'], inplace=True)
-        df_unstacked = df.unstack(level='stock_id')
+        df_unstacked = df.unstack(level=['stock_id','date_id'])
         df_unstacked.columns = ['_'.join(map(str, col)).strip() for col in df_unstacked.columns.values]
         pivoted_df = df_unstacked.fillna(0)
         pivoted_df .reset_index(inplace=True)
+        pivoted_df['time_group'] = pivoted_df['time_id'] // 360
         relevant_columns = [col for col in pivoted_df.columns if col.startswith(self.target_col_name)]
         relevant_columns =relevant_columns
         pivoted_df = pivoted_df[relevant_columns]
+        relevant_columns += ['time_group'] 
         time_series_data = pivoted_df.to_numpy()
+
+        return time_series_data
+
+    def apply(self, df):
+        print("DTWKMeansPreprocessor_start")
+        time_series_data = self.data_manipulation(df).to_numpy()
         labels = self.model.fit_predict(time_series_data)
         cluster_df = pd.DataFrame(labels, index=df_unstacked.index, columns=['cluster'])
         df.reset_index(inplace=True)
         processed_df = pd.merge(df, cluster_df, on=['date_id', 'time_id'], how='left')
         processed_df = processed_df.dropna(subset=['cluster'])
         processed_df['cluster'] = processed_df['cluster'].astype(int)
+
         print("DTWKMeansPreprocessor_end")
         return processed_df

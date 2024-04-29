@@ -34,12 +34,13 @@ class CatBoostModelPipeline(ModelPipeline):
 
 
     def get_name_with_params(self, params):
-        selected_params_for_model_name = ['learning_rate', 'depth', 'subsample']
+        selected_params_for_model_name = ['learning_rate', 'depth']
         return "_".join([f"{param_n}_{params[param_n]}" for param_n in selected_params_for_model_name])
 
     def get_static_params(self):
         return {
             'random_state': 42,
+            "task_type": "GPU"
         }
 
     def get_hyper_params(self, trial):
@@ -48,8 +49,8 @@ class CatBoostModelPipeline(ModelPipeline):
             {
                 "learning_rate": trial.suggest_float("learning_rate", 1e-3, 0.1, log=True),
                 "depth": trial.suggest_int("depth", 1, 10),
-                "subsample": trial.suggest_float("subsample", 0.05, 1.0),
-                "colsample_bylevel": trial.suggest_float("colsample_bylevel", 0.05, 1.0),
+                # "subsample": trial.suggest_float("subsample", 0.05, 1.0),
+                # "colsample_bylevel": trial.suggest_float("colsample_bylevel", 0.05, 1.0),
                 "min_data_in_leaf": trial.suggest_int("min_data_in_leaf", 1, 100),
                 'iterations': trial.suggest_int('n_estimators', 100, 1000, step=100),
             }

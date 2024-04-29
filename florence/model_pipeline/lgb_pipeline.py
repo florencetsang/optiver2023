@@ -47,6 +47,9 @@ class LGBModelPipeline(ModelPipeline):
             'random_state': 42,
             'force_col_wise': True,
             "verbosity": -1,
+            'device': 'gpu',
+            'gpu_platform_id': 0,
+            'gpu_device_id ': 0,
         }
 
     def get_hyper_params(self, trial):

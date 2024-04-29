@@ -2,9 +2,9 @@ import xgboost as xgb
 from model_pipeline.model_pipeline import ModelPipeline, ModelPipelineFactory
 
 class XGBModelPipeline(ModelPipeline):
+
     def __init__(self):
         super().__init__()
-
 
     def init_model(self, param: dict = None):
         if param:
@@ -12,6 +12,7 @@ class XGBModelPipeline(ModelPipeline):
         else:
             self.model = xgb.XGBRegressor(tree_method='hist', objective='reg:absoluteerror', n_estimators=500,
                                           early_stopping_rounds=100, random_state=42)
+
 
     def _train(self, train_X, train_Y, eval_X, eval_Y):
         eval_set = self._get_eval_set(eval_X, eval_Y)
@@ -45,7 +46,8 @@ class XGBModelPipeline(ModelPipeline):
             "objective": "reg:absoluteerror",
             # use exact for small dataset.
             "early_stopping_rounds": 100,
-            'random_state': 42,
+            "random_state": 42,
+            "device": "cuda"
         }
 
     def get_hyper_params(self, trial):
@@ -55,7 +57,6 @@ class XGBModelPipeline(ModelPipeline):
                 'n_estimators': trial.suggest_int('n_estimators', 100, 1000, step=100),
                 'max_depth': trial.suggest_int('max_depth', 1, 10),
                 "booster": trial.suggest_categorical("booster", ["gbtree"]),
-                # "booster": trial.suggest_categorical("booster", ["gbtree", "gblinear", "dart"]),
                 # L2 regularization weight.
                 "reg_lambda": trial.suggest_float("reg_lambda", 1e-8, 1.0, log=True),
                 # L1 regularization weight.

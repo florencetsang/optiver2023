@@ -17,7 +17,12 @@ class MLPModelPipeline(ModelPipeline):
         [64,64,64],
         [128,64,32],
         [64,32,16],
-        [64,128,64],
+        [64,128,64],        
+        # [64],
+        # [128],
+        # [256],
+        # [512],
+        # [1024],
     ]
 
     def __init__(self, model_id, plot_path, num_features=12):
@@ -25,6 +30,9 @@ class MLPModelPipeline(ModelPipeline):
         self.model_id = model_id
         self.plot_path = plot_path
         self.num_features = num_features
+
+    def init_model_metadata(self, metadata):
+        self.num_features = metadata["num_features"]
 
     def init_model(self, param: dict = None, fold=9999):
         # init a new model + reset stateful params
