@@ -8,6 +8,7 @@ from data_preprocessor.polynomial_features import PolynomialFeaturesPreProcessor
 from data_preprocessor.stockid_features import StockIdFeaturesPreProcessor, StockIdFeaturesDataTransformer
 from data_preprocessor.deep_feature_synthesis import DfsPreProcessor, StockDateIdPreprocessor, FeatureToolsDFSTransformer
 from data_preprocessor.normalization import NormalizationDataTransformer
+from data_preprocessor.stocks_pca_preprocessor import StocksPcaPreProcessor
 from data_generator.data_generator import DefaultTrainEvalDataGenerator, ManualKFoldDataGenerator, TimeSeriesKFoldDataGenerator, TimeSeriesLastFoldDataGenerator
 
 from model_pipeline.lgb_pipeline import LGBModelPipelineFactory
@@ -64,6 +65,7 @@ processors = [
     # EWMAPreProcessor("wap", 10),
     # EWMAFillNaPreprocessor("wap", 1.0),
     # StockIdFeaturesPreProcessor(),   
+    # StocksPcaPreProcessor(),
     # DTWKMeansPreprocessor(),
     # DfsPreProcessor(),
     # StockDateIdPreprocessor(), 
