@@ -35,10 +35,11 @@ class ManualKFoldDataGenerator(TrainEvalDataGenerator):
 
 
 class TimeSeriesKFoldDataGenerator(TrainEvalDataGenerator):
-    def __init__(self, n_fold=5, test_set_ratio=None):
+    def __init__(self, n_fold=5, test_set_ratio=None, transform_pipeline=None):
         super().__init__()
         self.n_fold = n_fold
         self.test_set_ratio = test_set_ratio
+        self.transform_pipeline = transform_pipeline
 
     def generate(self, data):
         train_dfs, eval_dfs = [], []
@@ -49,9 +50,24 @@ class TimeSeriesKFoldDataGenerator(TrainEvalDataGenerator):
         for i, (train_index, test_index) in enumerate(tscv.split(data)):
             fold_df_train = data.iloc[train_index].copy(deep=True)
             fold_df_eval = data.iloc[test_index].copy(deep=True)
+
+            print(f"TimeSeriesKFoldDataGenerator - before transformations (fold {i}) - fold_df_train: {get_df_summary_str(fold_df_train)}, fold_df_eval: {get_df_summary_str(fold_df_eval)}")
+            if self.has_transformations():
+                fold_df_train = self.transform_pipeline.fit_transform(fold_df_train)
+                print(f"TimeSeriesKFoldDataGenerator - has_transformations (fold {i}) - fit_transform fold_df_train")
+                fold_df_eval = self.transform_pipeline.transform(fold_df_eval)
+                print(f"TimeSeriesKFoldDataGenerator - has_transformations (fold {i}) - transform fold_df_eval")
+            else:
+                print(f"TimeSeriesKFoldDataGenerator - has_transformations (fold {i}) = false")
+            print(f"TimeSeriesKFoldDataGenerator - final (fold {i}) - fold_df_train: {get_df_summary_str(fold_df_train)}, fold_df_eval: {get_df_summary_str(fold_df_eval)}")
+            
             train_dfs.append(fold_df_train)
             eval_dfs.append(fold_df_eval)
         return train_dfs, eval_dfs, self.n_fold
+
+    def has_transformations(self):
+        return self.transform_pipeline is not None
+
 
 class TimeSeriesKFoldDataGeneratorOptimized(TrainEvalDataGenerator):
     def __init__(self, n_fold=5, test_set_ratio=None):
@@ -70,6 +86,7 @@ class TimeSeriesKFoldDataGeneratorOptimized(TrainEvalDataGenerator):
             fold_df_eval = data.iloc[test_index].copy(deep=True)
             yield fold_df_train, fold_df_eval
     
+
 class TimeSeriesLastFoldDataGenerator(TrainEvalDataGenerator):
 
     def __init__(self, test_set_ratio=0.1, use_optimized_last_fold=False, transform_pipeline=None):
