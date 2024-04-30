@@ -119,7 +119,7 @@ last_fold_data_generator_transform_pipeline = make_pipeline(
     #     group_by_date=False,
     #     group_by_stock_date=False,
     # ),
-    StockIdFeaturesDataTransformer(),
+    # StockIdFeaturesDataTransformer(),
     NormalizationDataTransformer(
         [
             "imbalance_size",
