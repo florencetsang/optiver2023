@@ -12,7 +12,7 @@ class StocksPcaPreProcessor(DataPreprocessor):
         super()._init_()
 
     def apply(self, df):
-        stock_clusters = pd.read_csv('stock_clusters.csv')
+        stock_clusters = pd.read_csv('./stocks_pca/stock_clusters.csv')
         df = df.merge(stock_clusters, how='left', on='stock_id')
         
         return df
