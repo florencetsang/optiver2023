@@ -39,9 +39,9 @@ To run experiments of different models and different feature sets:
 First, cd to optiver2023/florence/
 Then, running the following:
 
-`python optuna_main.py <model_name> <model_type>`
+`python main.py <model_name> <model_type>`
 
-eg: `python optuna_main.py 20240422_lgb_moving_avg lgb`
+eg: `python main.py 20240422_lgb_moving_avg lgb`
 
 
 
