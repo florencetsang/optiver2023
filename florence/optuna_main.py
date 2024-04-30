@@ -65,7 +65,7 @@ processors = [
     # EWMAPreProcessor("wap", 10),
     # EWMAFillNaPreprocessor("wap", 1.0),
     # StockIdFeaturesPreProcessor(),   
-    StocksPcaPreProcessor(),
+    # StocksPcaPreProcessor(),
     # DTWKMeansPreprocessor(),
     # DfsPreProcessor(),
     # StockDateIdPreprocessor(), 
