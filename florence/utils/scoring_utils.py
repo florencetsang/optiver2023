@@ -1,5 +1,5 @@
 import numpy as np
-from sklearn.metrics import mean_absolute_error
+from sklearn.metrics import mean_absolute_error, r2_score
 from utils.ml_utils import MLUtils
 
 class ScoringUtils:

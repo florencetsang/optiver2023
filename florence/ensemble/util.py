@@ -10,7 +10,8 @@ from load_data import load_data_from_csv
 import joblib
 
 from data_preprocessor.data_preprocessor import CompositeDataPreprocessor, ReduceMemUsageDataPreprocessor, FillNaPreProcessor
-from data_preprocessor.feature_engineering import BasicFeaturesPreprocessor, DupletsTripletsPreprocessor, MovingAvgPreProcessor, EWMAPreProcessor, RemoveIrrelevantFeaturesDataPreprocessor, DropTargetNADataPreprocessor, DTWKMeansPreprocessor, RemoveRecordsByStockDateIdPreprocessor, FarNearPriceFillNaPreprocessor, MovingAvgFillNaPreprocessor
+from data_preprocessor.feature_engineering import BasicFeaturesPreprocessor, DupletsTripletsPreprocessor, MovingAvgPreProcessor, EWMAPreProcessor, RemoveIrrelevantFeaturesDataPreprocessor, DropTargetNADataPreprocessor, DTWKMeansPreprocessor, RemoveRecordsByStockDateIdPreprocessor, FarNearPriceFillNaPreprocessor, MovingAvgFillNaPreprocessor, EWMAFillNaPreprocessor, RemoveIrrelevantFeaturesDataTransformer
+from data_preprocessor.stocks_pca_preprocessor import StocksPcaPreProcessor
 
 from model_pipeline.model_pipeline import ModelPipeline
 
@@ -33,7 +34,42 @@ lgb_features = {
 }
 
 xgb_features = {
-    # "xgb_n_estimators_600_max_depth_6_subsample_0.8738892673715852_20240429_xgb_basic_dupletstriplets_ma": ['seconds_in_bucket', 'imbalance_size', 'imbalance_buy_sell_flag', 'reference_price', 'matched_size', 'far_price', 'near_price', 'bid_price', 'bid_size', 'ask_price', 'ask_size', 'wap', 'reference_price_far_price_imb', 'reference_price_near_price_imb', 'reference_price_ask_price_imb', 'reference_price_bid_price_imb', 'reference_price_wap_imb', 'far_price_near_price_imb', 'far_price_ask_price_imb', 'far_price_bid_price_imb', 'far_price_wap_imb', 'near_price_ask_price_imb', 'near_price_bid_price_imb', 'near_price_wap_imb', 'ask_price_bid_price_imb', 'ask_price_wap_imb', 'bid_price_wap_imb', 'reference_price_ask_price_bid_price_imb2', 'reference_price_ask_price_wap_imb2', 'reference_price_bid_price_wap_imb2', 'ask_price_bid_price_wap_imb2'],
+    "xgb_n_estimators_600_max_depth_6_subsample_0.8738892673715852_20240429_xgb_basic_dupletstriplets_ma": [
+        'seconds_in_bucket',
+        'imbalance_size',
+        'imbalance_buy_sell_flag',
+        'reference_price',
+        'matched_size',
+        'far_price',
+        'near_price',
+        'bid_price',
+        'bid_size',
+        'ask_price',
+        'ask_size',
+        'wap',
+        'bid_ask_rr',
+        'shortage_s2',
+        'pressure',
+        'shortage_s1',
+        'reference_price_far_price_imb',
+        'reference_price_near_price_imb',
+        'reference_price_ask_price_imb',
+        'reference_price_bid_price_imb',
+        'reference_price_wap_imb',
+        'far_price_near_price_imb',
+        'far_price_ask_price_imb',
+        'far_price_bid_price_imb',
+        'far_price_wap_imb',
+        'near_price_ask_price_imb',
+        'near_price_bid_price_imb',
+        'near_price_wap_imb',
+        'ask_price_bid_price_imb',
+        'ask_price_wap_imb',
+        'bid_price_wap_imb',
+        'wap_mov_avg_3_1',
+        'wap_mov_avg_6_3',
+        'wap_mov_avg_12_6',
+        'wap_mov_avg_24_12'],
     "xgb_n_estimators_400_max_depth_5_subsample_0.9252668794663379_20240427_xgb_dupletstriplets_moving_avg": ['seconds_in_bucket', 'imbalance_size', 'imbalance_buy_sell_flag', 'reference_price', 'matched_size', 'far_price', 'near_price', 'bid_price', 'bid_size', 'ask_price', 'ask_size', 'wap', 'reference_price_far_price_imb', 'reference_price_near_price_imb', 'reference_price_ask_price_imb', 'reference_price_bid_price_imb', 'reference_price_wap_imb', 'far_price_near_price_imb', 'far_price_ask_price_imb', 'far_price_bid_price_imb', 'far_price_wap_imb', 'near_price_ask_price_imb', 'near_price_bid_price_imb', 'near_price_wap_imb', 'ask_price_bid_price_imb', 'ask_price_wap_imb', 'bid_price_wap_imb', 'reference_price_ask_price_bid_price_imb2', 'reference_price_ask_price_wap_imb2', 'reference_price_bid_price_wap_imb2', 'ask_price_bid_price_wap_imb2', 'wap_mov_avg_3_1', 'wap_mov_avg_6_3', 'wap_mov_avg_12_6', 'wap_mov_avg_24_12'],
     # "xgb_n_estimators_800_max_depth_5_subsample_0.875323681209857_20240428_xgb_dfs": ,
 }
@@ -41,7 +77,88 @@ xgb_features = {
 cat_features = {
     "cbt_learning_rate_0.027761260843724055_depth_10_20240428_cb_basic_dupletstriplets": ['seconds_in_bucket', 'imbalance_size', 'imbalance_buy_sell_flag', 'reference_price', 'matched_size', 'far_price', 'near_price', 'bid_price', 'bid_size', 'ask_price', 'ask_size', 'wap', 'bid_ask_rr', 'shortage_s2', 'pressure', 'shortage_s1', 'reference_price_far_price_imb', 'reference_price_near_price_imb', 'reference_price_ask_price_imb', 'reference_price_bid_price_imb', 'reference_price_wap_imb', 'far_price_near_price_imb', 'far_price_ask_price_imb', 'far_price_bid_price_imb', 'far_price_wap_imb', 'near_price_ask_price_imb', 'near_price_bid_price_imb', 'near_price_wap_imb', 'ask_price_bid_price_imb', 'ask_price_wap_imb', 'bid_price_wap_imb', 'reference_price_ask_price_bid_price_imb2', 'reference_price_ask_price_wap_imb2', 'reference_price_bid_price_wap_imb2', 'ask_price_bid_price_wap_imb2'],
     "cbt_learning_rate_0.018417868812907523_depth_10_20240427_cb_dupletstriplets": ['seconds_in_bucket', 'imbalance_size', 'imbalance_buy_sell_flag', 'reference_price', 'matched_size', 'far_price', 'near_price', 'bid_price', 'bid_size', 'ask_price', 'ask_size', 'wap', 'reference_price_far_price_imb', 'reference_price_near_price_imb', 'reference_price_ask_price_imb', 'reference_price_bid_price_imb', 'reference_price_wap_imb', 'far_price_near_price_imb', 'far_price_ask_price_imb', 'far_price_bid_price_imb', 'far_price_wap_imb', 'near_price_ask_price_imb', 'near_price_bid_price_imb', 'near_price_wap_imb', 'ask_price_bid_price_imb', 'ask_price_wap_imb', 'bid_price_wap_imb', 'reference_price_ask_price_bid_price_imb2', 'reference_price_ask_price_wap_imb2', 'reference_price_bid_price_wap_imb2', 'ask_price_bid_price_wap_imb2'],
-    "cbt_learning_rate_0.031737065340487244_depth_9_20240428_cb_basic_dupletstriplets_ma": ['seconds_in_bucket', 'imbalance_size', 'imbalance_buy_sell_flag', 'reference_price', 'matched_size', 'far_price', 'near_price', 'bid_price', 'bid_size', 'ask_price', 'ask_size', 'wap', 'bid_ask_rr', 'shortage_s2', 'pressure', 'shortage_s1', 'wap_mov_avg_3_1', 'wap_mov_avg_6_3', 'wap_mov_avg_12_6', 'wap_mov_avg_24_12']
+    # "cbt_learning_rate_0.031737065340487244_depth_9_20240428_cb_basic_dupletstriplets_ma": ['seconds_in_bucket', 'imbalance_size', 'imbalance_buy_sell_flag', 'reference_price', 'matched_size', 'far_price', 'near_price', 'bid_price', 'bid_size', 'ask_price', 'ask_size', 'wap', 'bid_ask_rr', 'shortage_s2', 'pressure', 'shortage_s1', 'wap_mov_avg_3_1', 'wap_mov_avg_6_3', 'wap_mov_avg_12_6', 'wap_mov_avg_24_12']
+}
+
+mlp_features = {
+    "": [],
+    "": [],
+    "": [],
+}
+
+mlp_1_layer_features = {
+    # "mlp_None_20240430_mlp1layer_raw_MA_duplets.keras": ['seconds_in_bucket',
+    #                                                      'imbalance_size',
+    #                                                      'imbalance_buy_sell_flag',
+    #                                                      'reference_price',
+    #                                                      'matched_size',
+    #                                                      'far_price',
+    #                                                      'near_price',
+    #                                                      'bid_price',
+    #                                                      'bid_size',
+    #                                                      'ask_price',
+    #                                                      'ask_size',
+    #                                                      'wap', 'reference_price_far_price_imb',
+    #                                                      'reference_price_near_price_imb',
+    #                                                      'reference_price_ask_price_imb',
+    #                                                      'reference_price_bid_price_imb',
+    #                                                      'reference_price_wap_imb',
+    #                                                      'far_price_near_price_imb',
+    #                                                      'far_price_ask_price_imb',
+    #                                                      'far_price_bid_price_imb',
+    #                                                      'far_price_wap_imb',
+    #                                                      'near_price_ask_price_imb',
+    #                                                      'near_price_bid_price_imb',
+    #                                                      'near_price_wap_imb',
+    #                                                      'ask_price_bid_price_imb',
+    #                                                      'ask_price_wap_imb',
+    #                                                      'bid_price_wap_imb',
+    #                                                      'wap_mov_avg_3_1',
+    #                                                      'wap_mov_avg_6_3',
+    #                                                      'wap_mov_avg_12_6',
+    #                                                      'wap_mov_avg_24_12'],
+    "mlp_None_20240430_mlp1layer_raw_MA_duplets.keras": [
+        'seconds_in_bucket',
+        'imbalance_size',
+        'imbalance_buy_sell_flag',
+        'reference_price',
+        'matched_size',
+        'far_price',
+        'near_price',
+        'bid_price',
+        'bid_size',
+        'ask_price',
+        'ask_size',
+        'wap',
+        'bid_ask_rr',
+        'shortage_s2',
+        'pressure',
+        'shortage_s1',
+        'reference_price_far_price_imb',
+        'reference_price_near_price_imb',
+        'reference_price_ask_price_imb',
+        'reference_price_bid_price_imb',
+        'reference_price_wap_imb',
+        'far_price_near_price_imb',
+        'far_price_ask_price_imb',
+        'far_price_bid_price_imb',
+        'far_price_wap_imb',
+        'near_price_ask_price_imb',
+        'near_price_bid_price_imb',
+        'near_price_wap_imb',
+        'ask_price_bid_price_imb',
+        'ask_price_wap_imb',
+        'bid_price_wap_imb',
+        'wap_mov_avg_3_1',
+        'wap_mov_avg_6_3',
+        'wap_mov_avg_12_6',
+        'wap_mov_avg_24_12'],
+}
+
+transformer_features = {
+    "20240430_transformer_basic_dupletstriplets_ma": [],
+    "": [],
+    "": [],
 }
 
 
@@ -83,6 +200,28 @@ def prep_data():
     #     # PolynomialFeaturesPreProcessor(),
     # ]
 
+    # processors = [
+    #     ReduceMemUsageDataPreprocessor(verbose=True),
+    #     RemoveRecordsByStockDateIdPreprocessor([
+    #         {"stock_id": 19, "date_id": 438},
+    #         {"stock_id": 101, "date_id": 328},
+    #         {"stock_id": 131, "date_id": 35},
+    #         {"stock_id": 158, "date_id": 388},
+    #     ]),
+    #     FarNearPriceFillNaPreprocessor(),
+    #     BasicFeaturesPreprocessor(),
+    #     DupletsTripletsPreprocessor(),
+    #     MovingAvgPreProcessor("wap"),
+    #     MovingAvgFillNaPreprocessor("wap", 1.0),
+    #     # StockIdFeaturesPreProcessor(),
+    #     # DTWKMeansPreprocessor(),
+    #     # DfsPreProcessor(),
+    #     # DropTargetNADataPreprocessor(),
+    #     RemoveIrrelevantFeaturesDataPreprocessor(['stock_id', 'date_id', 'time_id', 'row_id']),
+    #     FillNaPreProcessor(1.0),
+    #     # PolynomialFeaturesPreProcessor(),
+    # ]
+
     processors = [
         ReduceMemUsageDataPreprocessor(verbose=True),
         RemoveRecordsByStockDateIdPreprocessor([
@@ -96,12 +235,17 @@ def prep_data():
         DupletsTripletsPreprocessor(),
         MovingAvgPreProcessor("wap"),
         MovingAvgFillNaPreprocessor("wap", 1.0),
+        EWMAPreProcessor("wap", 10),
+        EWMAFillNaPreprocessor("wap", 1.0),
         # StockIdFeaturesPreProcessor(),
+        StocksPcaPreProcessor(),
         # DTWKMeansPreprocessor(),
         # DfsPreProcessor(),
+        # StockDateIdPreprocessor(),
+        # FeatureToolsDFSPreprocessor(),
         # DropTargetNADataPreprocessor(),
         RemoveIrrelevantFeaturesDataPreprocessor(['stock_id', 'date_id', 'time_id', 'row_id']),
-        FillNaPreProcessor(1.0),
+        # FillNaPreProcessor(1.0),
         # PolynomialFeaturesPreProcessor(),
     ]
 
@@ -115,7 +259,7 @@ def prep_data():
 
     model_pipeline = ModelPipeline()
     X_train_fold, y_train_fold, X_val_fold, y_val_fold = model_pipeline.create_XY(df_train, df_val)
-    return X_train_fold, y_train_fold, X_val_fold, y_val_fold
+    return X_train_fold, y_train_fold, X_val_fold, y_val_fold, df_train, df_val
 
 
 def train_ensemble_model(estimators, X_train_fold, y_train_fold,
@@ -126,7 +270,7 @@ def train_ensemble_model(estimators, X_train_fold, y_train_fold,
     # mlp_model = load_model('ensemble_models/mlp_None_20240423_mlp_moving_avg.keras')
 
     final_estimator = GradientBoostingRegressor(
-        n_estimators=25, subsample=0.5, min_samples_leaf=25, max_features=1,
+        n_estimators=100, subsample=0.5, min_samples_leaf=25,
         random_state=42)
     stacking_regressor = StackingRegressor(
         estimators=estimators,
