@@ -2,10 +2,10 @@ import xgboost as xgb
 from model_pipeline.model_pipeline import ModelPipeline, ModelPipelineFactory
 
 class XGBModelPipeline(ModelPipeline):
-  
+
     def __init__(self):
-        super().__init__()        
-        
+        super().__init__()
+
     def init_model(self, param: dict = None):
         if param:
             self.model = xgb.XGBRegressor(**param)
